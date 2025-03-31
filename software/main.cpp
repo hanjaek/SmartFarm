@@ -1,23 +1,55 @@
-#include <Arduino.h>
+// main.cpp
+#include <WiFi.h>
+#include <ESP32WebServer.h>
+#include "motor.h"  // motor 관련 함수들을 motor.cpp에서 가져옴
+#include "sensor.h"
+#include "display.h"
 
-// 릴레이가 연결된 핀 설정
+const char* ssid = "your_SSID";        // Wi-Fi SSID
+const char* password = "your_PASSWORD"; // Wi-Fi 비밀번호
 
-//갈색 2번 핀
-//빨간색 5v
-//주황색 GND
-const int relayPin = 16;  // 2번 핀
+ESP32WebServer server(80); // HTTP 서버 객체
+
+// Wi-Fi 연결 함수
+void setup_wifi() {
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("Connected to Wi-Fi!");
+}
+
+// /control-motor 엔드포인트 핸들러
+void handle_motor_control() {
+  String action = server.arg("action");  // action 파라미터 받기
+
+  if (action == "on") {
+    motor_on();  // 모터 켜기
+    server.send(200, "text/plain", "Motor is ON");
+  } else if (action == "off") {
+    motor_off();  // 모터 끄기
+    server.send(200, "text/plain", "Motor is OFF");
+  } else {
+    server.send(400, "text/plain", "Invalid action");
+  }
+}
 
 void setup() {
-  // 릴레이 핀을 출력 모드로 설정
-  pinMode(relayPin, OUTPUT);
+  setup_wifi();  // Wi-Fi 연결
+
+  motor_init();  // 모터 초기화
+
+  // HTTP 요청에 대한 핸들러 설정
+  server.on("/control-motor", HTTP_POST, handle_motor_control);
+
+  server.begin();  // 서버 시작
+  Serial.println("HTTP server started");
 }
 
 void loop() {
-  // 릴레이에 HIGH 신호를 보내 10초 동안 활성화
-  digitalWrite(relayPin, HIGH);
-  delay(10000);  // 10초 대기
-
-  // 릴레이에 LOW 신호를 보내 10초 동안 비활성화
-  digitalWrite(relayPin, LOW);
-  delay(10000);  // 10초 대기
+  server.handleClient();  // 클라이언트 요청 처리
 }
