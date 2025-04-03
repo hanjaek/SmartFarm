@@ -1,1 +1,82 @@
+# ---------------------
+#       IDE 관련
+# ---------------------
+.vscode/
+.idea/
+*.iml
+
+.classpath
+.project
+.settings/
+
+*.sublime-workspace
+*.sublime-project
+
+*.swp  # vim 임시 파일
+
+# ---------------------
+#     Python 관련
+# ---------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.ipynb_checkpoints
+.env/
+venv/
+Pipfile.lock
+poetry.lock
+
+# ---------------------
+#     C / C++ 관련
+# ---------------------
+*.o
+*.obj
+*.so
+*.a
+*.out
 *.exe
+*.dll
+*.class
+*.gch
+*.pdb
+*.ilk
+*.tmp
+*.log
+*.map
+
+# Arduino 빌드 관련
+*.hex
+*.elf
+*.bin
+*.d
+*.dep
+
+# ---------------------
+#     Node.js 관련
+# ---------------------
+node_modules/
+npm-debug.log*
+yarn-error.log
+dist/
+build/
+.cache/
+.eslintcache
+
+# ---------------------
+#     기타 개발 관련
+# ---------------------
+
+
+# 압축 및 백업 파일
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.bak
+*.old
+
+# 로그 파일
+*.log
+
