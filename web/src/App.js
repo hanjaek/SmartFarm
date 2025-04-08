@@ -18,7 +18,7 @@ import UserControlPanel from './pages/User/UserControlPanel';
 import DataVisualization from "./pages/User/UserDataVisualization";
 import Settings from "./pages/User/UserSettings";
 import Profile from "./pages/User/UserProfile";
-import Help from "./pages/Help";
+import Help from "./pages/User/UserHelp";
 import UserEnvironmentSettings from "./pages/User/UserEnvironmentSettings";
 
 // 어드민 페이지
