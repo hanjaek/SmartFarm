@@ -49,5 +49,12 @@ CREATE TABLE daily_sensor_avg (
 -- 테스트 코드
 
 INSERT INTO users (username, password)
-VALUES ('hanjae', '1234');  -- 실제로는 비밀번호는 해시해서 저장해야 함
+VALUES ('hanjae', '1234'); 
+
+INSERT INTO devices (user_id, type, name, location)
+VALUES 
+(1, 'DHT11', '온습도센서', '비닐하우스 A-1'),
+(1, 'LIGHT', '조도센서', '비닐하우스 A-2'),
+(1, 'SOIL', '토양센서', '비닐하우스 A-3'),
+(1, 'CO2', '이산화탄소센서', '비닐하우스 A-4');
 
