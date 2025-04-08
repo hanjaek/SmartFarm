@@ -1,0 +1,53 @@
+-- 📌 Drop 테이블 (기존 테이블 초기화)
+DROP TABLE IF EXISTS daily_sensor_avg;
+DROP TABLE IF EXISTS sensor_data;
+DROP TABLE IF EXISTS devices;
+DROP TABLE IF EXISTS users;
+
+-- 👤 사용자 테이블
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+);
+
+-- 🛠 센서 장치 테이블
+CREATE TABLE devices (
+    device_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    type TEXT NOT NULL,     -- 예: DHT11, LIGHT, SOIL, CO2, PH 등
+    name TEXT NOT NULL,
+    location TEXT
+);
+
+-- 📈 실시간 센서 데이터 테이블 (센서별 칼럼 분리)
+CREATE TABLE sensor_data (
+    time TIMESTAMPTZ NOT NULL,
+    device_id INTEGER REFERENCES devices(device_id),
+    temperature DOUBLE PRECISION,
+    humidity DOUBLE PRECISION,
+    light DOUBLE PRECISION,
+    soil DOUBLE PRECISION,
+    co2 DOUBLE PRECISION
+);
+
+-- ⏱ Timescale 하이퍼테이블로 전환
+SELECT create_hypertable('sensor_data', 'time', if_not_exists => TRUE);
+
+-- 📊 일별 평균 센서값 저장 테이블
+CREATE TABLE daily_sensor_avg (
+    date DATE NOT NULL,
+    device_id INTEGER REFERENCES devices(device_id),
+    avg_temperature DOUBLE PRECISION,
+    avg_humidity DOUBLE PRECISION,
+    avg_light DOUBLE PRECISION,
+    avg_soil DOUBLE PRECISION,
+    avg_co2 DOUBLE PRECISION,
+    PRIMARY KEY (date, device_id)
+);
+
+-- 테스트 코드
+
+INSERT INTO users (username, password)
+VALUES ('hanjae', '1234');  -- 실제로는 비밀번호는 해시해서 저장해야 함
+
