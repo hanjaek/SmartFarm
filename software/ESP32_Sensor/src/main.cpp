@@ -1,44 +1,38 @@
 #include <Arduino.h>
-//통신 헤더
-#include <WiFi.h> // WiFi 사용하기 위한 헤더
-#include <PubSubClient.h> // MQTT 사용하기 위한 헤더
-// 센서 헤더
-#include <DHT.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
 
-// 핀번호 설정
-#define DHTPIN 4
-#define CDSPIN 35
-#define MQ2_PIN 32
+#include "Sensor_DHT.h"
+#include "Sensor_CDS.h"
+#include "Sensor_MQ2.h"
 
-// WiFi 설정 (연결될 wifi 이름, 비번)
-const char* ssid = "최혁진의 iPhone";  // wifi 이름 설정
-const char* password = "gurwlsdlWkd123"; // wifi 비번 설정정
+// Wi-Fi 설정
+const char* ssid = "최혁진의 iPhone";
+const char* password = "gurwlsdlWkd123";
 
-// MQTT 브로커 설정 (라즈베리파이 IP)
-const char* mqtt_server = "172.20.10.2"; // 라즈베리파이 ip 와 esp32와 같은 wifi 주소소
-const int mqtt_port = 1883; // Mosquitto 기본 포트
+// MQTT 설정
+const char* mqtt_server = "172.20.10.2";
+const int mqtt_port = 1883;
 
-WiFiClient espClient; // ESP32가 Wi-Fi 접속 후 데이터 주고받는 클라이언트 객체 생성하는 코드
-PubSubClient client(espClient); // MQTT 클라이언트를 생성 
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-/*
-float co2_sensor = 12.0; // ex) co2 sensor 값
-sersor 변수들 추가...
-*/
+// 센서 데이터
+Sensor_DHT dhtData;
+Sensor_CDS cdsData;
+Sensor_MQ2 mq2Data;
 
-// Wi-Fi 연결 함수
 void setup_wifi() {
   Serial.print("Wi-Fi 연결 중...");
-  WiFi.begin(ssid, password); // wifi 접속
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500); 
-    Serial.print("."); 
+    delay(500);
+    Serial.print(".");
   }
   Serial.println(" 연결됨!");
-  Serial.println(WiFi.localIP()); // wifi 연결 ip 출력력
+  Serial.println(WiFi.localIP());
 }
 
-// MQTT 연결함수
 void reconnect() {
   while (!client.connected()) {
     Serial.print("MQTT 연결 시도 중...");
@@ -54,29 +48,35 @@ void reconnect() {
 }
 
 void setup() {
-  Serial.begin(115200); // 통신 속도 설정
-  setup_wifi(); // wifi 연결
-  client.setServer(mqtt_server, mqtt_port); // MQTT 연결
+  Serial.begin(115200);
+  setup_wifi();
+  client.setServer(mqtt_server, mqtt_port);
+
+  init_DHT(); // DHT 초기화
 }
 
 void loop() {
   if (!client.connected()) {
-    reconnect(); // MQTT 설정 실패하면 다시연결결
+    reconnect();
   }
-  client.loop(); // MQTT 메시지 처리 (필수)
+  client.loop();
 
-  /*
-  TEST
+  delay(2000); // 2초마다 읽기
 
-  // 가상의 센서 데이터 생성 (0~100 랜덤값)
-  int sensorValue = random(0, 100);
+  read_DHT(dhtData);
+  read_CDS(cdsData);
+  read_MQ2(mq2Data);
 
-  // MQTT 메시지 전송
-  String payload = String(sensorValue); // sersor 값 문자열로 변환환
-  client.publish("esp32/testdata", payload.c_str()); // topit 형식으로 MQTT Publish
+  // 테스트용 출력
+  Serial.printf("습도: %.2f %%\t온도: %.2f °C\n", dhtData.humidity, dhtData.temperature);
+  Serial.printf("조도: %.2f\n", cdsData.cds);
+  Serial.printf("가스: %.2f\n", mq2Data.gas);
 
-  Serial.println("MQTT 메시지 전송: " + payload); // MQTT로 전송된 메세지 확인인
-  
-  delay(5000); // 5초마다 전송
-  */
+  // MQTT로 전송
+  client.publish("esp32/humidity", String(dhtData.humidity).c_str());
+  client.publish("esp32/temperature", String(dhtData.temperature).c_str());
+  client.publish("esp32/cds", String(cdsData.cds).c_str());
+  client.publish("esp32/gas", String(mq2Data.gas).c_str());
+
+  Serial.println("MQTT 메시지 전송 완료");
 }
