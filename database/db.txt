@@ -1,43 +1,93 @@
--- 📌 STEP 1: 모든 기존 객체 제거
-DROP TABLE IF EXISTS daily_sensor_avg;
+-- 📌 STEP 1: 기존 객체 전체 제거
 DROP MATERIALIZED VIEW IF EXISTS daily_sensor_avg;
-DROP TABLE IF EXISTS monthly_sensor_avg;
-DROP TABLE IF EXISTS sensor_data;
+DROP TABLE IF EXISTS board_comments;
+DROP TABLE IF EXISTS board_posts;
+DROP TABLE IF EXISTS sensor_logs;
+DROP TABLE IF EXISTS device_controls;
+DROP TABLE IF EXISTS device_status;
+DROP TABLE IF EXISTS environment_settings;
+DROP TABLE IF EXISTS user_plants;
 DROP TABLE IF EXISTS devices;
 DROP TABLE IF EXISTS users;
 
-
 -- 👤 사용자 테이블
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
+    user_id SERIAL PRIMARY KEY, -- id
+    email TEXT UNIQUE NOT NULL,  -- 이메일
+    password TEXT NOT NULL, -- 비밀번호
+    user_name TEXT NOT NULL, -- 사용자 이름
+    nickname TEXT UNIQUE NOT NULL, -- 닉네임
+    farm_location TEXT, -- 농장 위치
+    role TEXT DEFAULT 'user', -- 권한
+    provider TEXT DEFAULT 'local',  -- 로그인 방식
+    created_at TIMESTAMPTZ DEFAULT now()  -- 생성일
 );
 
--- 🛠 센서 장치 테이블
+-- 🌿 사용자별 식물 테이블
+CREATE TABLE user_plants (
+    plant_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    plant_name TEXT NOT NULL, -- 품종 이름 (예: 상추, 청경채)
+    planted_at DATE, -- 심은 날짜
+    notes TEXT, -- 메모 또는 설명
+    temperature_optimal DOUBLE PRECISION, -- 최적 온도
+    humidity_optimal DOUBLE PRECISION, -- 최적 습도
+    soil_moisture_optimal DOUBLE PRECISION -- 최적 토양 수분
+);
+
+-- 🛠 장치 테이블
 CREATE TABLE devices (
     device_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id),
-    type TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('DHT-11', 'MQ2', 'CDS', '조명', '환기팬', '급수')),
     name TEXT NOT NULL,
     location TEXT
 );
 
--- 📈 실시간 센서 데이터 테이블
-CREATE TABLE sensor_data (
+-- 🌱 환경 기준치 설정 테이블
+CREATE TABLE environment_settings (
+    setting_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    temperature_threshold DOUBLE PRECISION,
+    humidity_threshold DOUBLE PRECISION,
+    soil_moisture_threshold DOUBLE PRECISION
+);
+
+-- 📟 장치 상태 테이블 (실시간 상태)
+CREATE TABLE device_status (
+    status_id SERIAL PRIMARY KEY,
+    device_id INTEGER REFERENCES devices(device_id),
+    watering BOOLEAN,
+    lighting BOOLEAN,
+    fan BOOLEAN,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 🎛 제어 기록 테이블 
+CREATE TABLE device_controls (
+    control_id SERIAL PRIMARY KEY,
+    device_id INTEGER REFERENCES devices(device_id),
+    control_type TEXT CHECK (control_type IN ('lighting', 'watering', 'fan')),
+    status BOOLEAN,
+    controlled_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 📈 센서 로그 테이블
+CREATE TABLE sensor_logs (
     time TIMESTAMPTZ NOT NULL,
     device_id INTEGER REFERENCES devices(device_id),
     temperature DOUBLE PRECISION,
     humidity DOUBLE PRECISION,
+    soil_moisture DOUBLE PRECISION,
+    gas DOUBLE PRECISION,
     light DOUBLE PRECISION,
-    soil DOUBLE PRECISION,
-    co2 DOUBLE PRECISION
+    PRIMARY KEY (time, device_id)
 );
 
--- ⏱ 하이퍼테이블로 변환
-SELECT create_hypertable('sensor_data', 'time', if_not_exists => TRUE);
+-- TimescaleDB 하이퍼테이블 등록
+SELECT create_hypertable('sensor_logs', 'time', if_not_exists => TRUE);
 
--- 📊 일별 평균 (Continuous Aggregate 뷰)
+-- 📊 일별 평균 
 CREATE MATERIALIZED VIEW daily_sensor_avg
 WITH (timescaledb.continuous) AS
 SELECT
@@ -45,63 +95,28 @@ SELECT
   device_id,
   AVG(temperature) AS avg_temperature,
   AVG(humidity) AS avg_humidity,
-  AVG(light) AS avg_light,
-  AVG(soil) AS avg_soil,
-  AVG(co2) AS avg_co2
-FROM sensor_data
+  AVG(soil_moisture) AS avg_soil_moisture,
+  AVG(gas) AS avg_gas,
+  AVG(light) AS avg_light
+FROM sensor_logs
 GROUP BY time_bucket('1 day', time), device_id
 WITH NO DATA;
 
--- ✅ 월별 평균 테이블
-CREATE TABLE monthly_sensor_avg (
-  month DATE NOT NULL,
-  device_id INTEGER REFERENCES devices(device_id),
-  avg_temperature DOUBLE PRECISION,
-  avg_humidity DOUBLE PRECISION,
-  avg_light DOUBLE PRECISION,
-  avg_soil DOUBLE PRECISION,
-  avg_co2 DOUBLE PRECISION,
-  PRIMARY KEY (month, device_id)
+-- 📝 게시글 테이블
+CREATE TABLE board_posts (
+    post_id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
+    plant_type TEXT,
+    content TEXT,
+    created_at DATE DEFAULT CURRENT_DATE
 );
 
--- ✅ STEP 2: 월말 요약 프로시저
-DROP PROCEDURE IF EXISTS archive_last_month_avg;
-
-CREATE PROCEDURE archive_last_month_avg()
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  target_month DATE := date_trunc('month', now()) - INTERVAL '1 month';
-  next_month DATE := date_trunc('month', now());
-BEGIN
-  -- 1. 지난 달 평균 계산해서 저장
-  INSERT INTO monthly_sensor_avg (month, device_id, avg_temperature, avg_humidity, avg_light, avg_soil, avg_co2)
-  SELECT
-    target_month,
-    device_id,
-    ROUND(AVG(avg_temperature), 2),
-    ROUND(AVG(avg_humidity), 2),
-    ROUND(AVG(avg_light), 2),
-    ROUND(AVG(avg_soil), 2),
-    ROUND(AVG(avg_co2), 2)
-  FROM daily_sensor_avg
-  WHERE date >= target_month AND date < next_month
-  GROUP BY device_id
-  ON CONFLICT (month, device_id) DO NOTHING;
-
-  -- 2. 지난 달 일별 평균 삭제
-  DELETE FROM daily_sensor_avg
-  WHERE date >= target_month AND date < next_month;
-END $$;
-
--- ✅ 테스트 데이터 삽입
-INSERT INTO users (username, password) VALUES ('hanjae', '1234');
-
-INSERT INTO devices (user_id, type, name, location) VALUES
-(1, 'DHT11', '온습도센서', '비닐하우스 A-1'),
-(1, 'LIGHT', '조도센서', '비닐하우스 A-2'),
-(1, 'SOIL', '토양센서', '비닐하우스 A-3'),
-(1, 'CO2', '이산화탄소센서', '비닐하우스 A-4');
-
--- ✅ 일 평균 초기화
--- CALL refresh_continuous_aggregate('daily_sensor_avg', NULL, NULL);
+-- 💬 게시글 댓글 테이블 
+CREATE TABLE board_comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id INTEGER REFERENCES board_posts(post_id),
+    commenter TEXT,
+    comment TEXT,
+    commented_at TIMESTAMPTZ DEFAULT NOW()
+);
