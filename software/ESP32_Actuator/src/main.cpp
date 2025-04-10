@@ -40,11 +40,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if (actualState == HIGH) {
       client.publish("esp32/led/status", "ON");
       Serial.print("LED 상태: ");
-      Serial.print(message);
+      Serial.println(message);
     } else {
       client.publish("esp32/led/status", "OFF");
       Serial.print("LED 상태: ");
-      Serial.print(message);
+      Serial.println(message);
     }
   }
 }

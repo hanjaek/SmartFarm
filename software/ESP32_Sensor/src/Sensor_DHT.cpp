@@ -14,6 +14,7 @@ void read_DHT(Sensor_DHT& data) {
     if (isnan(h)) {
         Serial.println("DHT 습도 센서 데이터 오류");
         h = 0.0;
+    }
     if (isnan(t)) {
         Serial.println("DHT 온도 센서 데이터 오류");
         t = 0.0;
