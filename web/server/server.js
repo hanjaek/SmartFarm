@@ -1,80 +1,91 @@
-require('dotenv').config(); // .env 파일 로드
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const mqtt = require('mqtt');
+const axios = require('axios');  // axios를 가져옵니다.
 
-// Express 서버 설정
 const app = express();
 const PORT = process.env.PORT || 5000;
+app.use(cors());
+app.use(express.json());
 
-app.use(cors()); // CORS 활성화
-app.use(express.json()); // JSON 요청 파싱
+// 환경 변수에서 라즈베리파이 IP 가져오기 (localhost로 로컬 테스트 가능)
+const RPI_IP = process.env.RPI_IP || 'localhost'; // 로컬 개발을 위한 기본값 localhost
 
-// MQTT 브로커 설정 (TLS 적용)
-const MQTT_BROKER = 'mqtts://test.mosquitto.org';
-const MQTT_TOPIC = 'smartfarm/DSE/light';
+// 초기 상태
+let lightStatus = "OFF";
+let fanStatus = "OFF";
+let wateringStatus = "OFF";
 
-// MQTT 클라이언트 생성 (TLS 적용)
-const mqttClient = mqtt.connect(MQTT_BROKER, {
-  port: 8883,  // TLS 포트
-  reconnectPeriod: 1000, // 1초마다 재연결 시도
-  rejectUnauthorized: false, // 🔥 공용 브로커일 경우 필요하지만, 자체 브로커 사용 시 제거할 것
+// 로그인 처리
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === 'admin' && password === '1234') {
+    res.status(200).json({ success: true, role: 'admin' });
+  } else if (username === 'user' && password === '1234') {
+    res.status(200).json({ success: true, role: 'user' });
+  } else {
+    res.status(401).json({ success: false, message: '로그인 실패: 아이디 또는 비밀번호가 틀렸습니다.' });
+  }
 });
 
-// ✅ MQTT 연결 상태 확인
-mqttClient.on('connect', () => {
-  console.log('✅ MQTT 연결 성공!');
-  mqttClient.subscribe(MQTT_TOPIC, (err) => {
-    if (err) {
-      console.error('❌ MQTT 토픽 구독 실패:', err);
-    } else {
-      console.log(`📡 MQTT 토픽 구독 성공: ${MQTT_TOPIC}`);
-    }
-  });
-});
-
-// ❌ MQTT 연결 실패 시 처리
-mqttClient.on('error', (err) => {
-  console.error('❌ MQTT 연결 실패:', err);
-});
-
-// 🚨 연결이 끊겼을 때 자동 재연결 로직
-mqttClient.on('close', () => {
-  console.warn('⚠️ MQTT 연결이 끊어졌습니다. 다시 연결 시도 중...');
-});
-
-// 📩 ESP32에서 메시지를 받았는지 확인하는 로그
-mqttClient.on('message', (topic, message) => {
-  console.log(`📥 MQTT 메시지 수신 [${topic}]: ${message.toString()}`);
-});
-
-// 전구 상태 저장 변수
-let isLightOn = false;
-
-// 📌 전구 상태 조회 API
 app.get('/light/status', (req, res) => {
-  res.json({ status: isLightOn ? 'on' : 'off' });
+  console.log(`📥 [Light Status 요청] 현재 상태: ${lightStatus}`);
+  res.json({ lightStatus });
 });
 
-// 📌 전구 ON/OFF 제어 API (MQTT 메시지 전송)
+// 상태 반환 - 팬
+app.get('/fan/status', (req, res) => {
+  console.log(`📥 [Fan Status 요청] 현재 상태: ${fanStatus}`);
+  res.json({ fanStatus });
+});
+
+// 상태 반환 - 급수
+app.get('/watering/status', (req, res) => {
+  console.log(`📥 [Watering Status 요청] 현재 상태: ${wateringStatus}`);
+  res.json({ wateringStatus });
+});
+
+// 조명 토글
 app.post('/light/toggle', (req, res) => {
-  if (!mqttClient.connected) {
-    return res.status(500).json({ error: 'MQTT 연결 실패, 다시 시도하세요. ' });
+  const { lightStatus: requestedStatus } = req.body;
+
+  if (!requestedStatus || (requestedStatus !== 'ON' && requestedStatus !== 'OFF')) {
+    return res.status(400).json({ error: '유효하지 않은 lightStatus 값입니다. (ON 또는 OFF)' });
   }
 
-  isLightOn = !isLightOn; // 상태 변경
-  const message = isLightOn ? 'ON' : 'OFF';
-  mqttClient.publish(MQTT_TOPIC, message, { qos: 1 }, (err) => {
-    if (err) {
-      console.error('❌ MQTT 메시지 전송 실패:', err);
-      return res.status(500).json({ error: '전구 상태 변경 실패' });
-    }
-    console.log(`💡 전구 상태 변경: ${message}`);
-    res.json({ status: isLightOn ? 'on' : 'off' });
-  });
+  lightStatus = requestedStatus;
+  console.log(`✅ 조명 상태 변경됨 → 현재 상태: ${lightStatus}`);
+  res.json({ lightStatus });
+});
+
+// 팬 토글
+app.post('/fan/toggle', (req, res) => {
+  const { fanStatus: requestedStatus } = req.body;
+
+  if (!requestedStatus || (requestedStatus !== 'ON' && requestedStatus !== 'OFF')) {
+    return res.status(400).json({ error: '유효하지 않은 fanStatus 값입니다. (ON 또는 OFF)' });
+  }
+
+  fanStatus = requestedStatus;
+  console.log(`✅ 팬 상태 변경됨 → 현재 상태: ${fanStatus}`);
+  res.json({ fanStatus });
+});
+
+// 급수 토글
+app.post('/watering/toggle', (req, res) => {
+  const { wateringStatus: requestedStatus } = req.body;
+
+  if (!requestedStatus || (requestedStatus !== 'ON' && requestedStatus !== 'OFF')) {
+    return res.status(400).json({ error: '유효하지 않은 wateringStatus 값입니다. (ON 또는 OFF)' });
+  }
+
+  wateringStatus = requestedStatus;
+  console.log(`✅ 급수 상태 변경됨 → 현재 상태: ${wateringStatus}`);
+  res.json({ wateringStatus });
 });
 
 // 서버 실행
 app.listen(PORT, () => {
-  console.log(`✅ 서버가 http://localhost:${PORT} 에서 실행 중!`);
+  console.log(`🌐 웹서버 실행 중: http://localhost:${PORT}`);
 });
