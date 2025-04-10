@@ -84,6 +84,40 @@ app.post('/light/toggle', (req, res) => {
   });
 });
 
+
+// ⬇️ 가장 마지막에 추가
+
+let latestSensorData = null;  // 센서 데이터 저장 변수
+
+// ✅ MQTT 구독: RPi → CloudServer
+const sensorDataTopic = 'actuator/led/status';
+
+mqttClient.subscribe(sensorDataTopic, (err) => {
+  if (!err) {
+    console.log(`📡 센서 데이터 토픽 구독 중: ${sensorDataTopic}`);
+  } else {
+    console.error('❌ 센서 데이터 토픽 구독 실패:', err.message);
+  }
+});
+
+// ✅ 센서 데이터 수신 시 저장
+mqttClient.on('message', (topic, message) => {
+  if (topic === sensorDataTopic) {
+    latestSensorData = message.toString();
+    console.log('📨 MQTT 센서 데이터 수신:', latestSensorData);
+  }
+});
+
+// ✅ 사용자 요청 시 최신 센서 데이터 제공
+app.get('/actuator/led/status', (req, res) => {
+  if (latestSensorData) {
+    res.json({ sensorData: latestSensorData });
+  } else {
+    res.status(404).json({ error: '아직 수신된 센서 데이터가 없습니다.' });
+  }
+});
+
+
 // ✅ 서버 실행
 app.listen(port, () => {
   console.log(`🌐 CloudServer HTTP 서버 실행 중: http://localhost:${port}`);
