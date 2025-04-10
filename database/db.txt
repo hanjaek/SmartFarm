@@ -1,8 +1,11 @@
--- 📌 Drop 테이블 (기존 테이블 초기화)
+-- 📌 STEP 1: 모든 기존 객체 제거
 DROP TABLE IF EXISTS daily_sensor_avg;
+DROP MATERIALIZED VIEW IF EXISTS daily_sensor_avg;
+DROP TABLE IF EXISTS monthly_sensor_avg;
 DROP TABLE IF EXISTS sensor_data;
 DROP TABLE IF EXISTS devices;
 DROP TABLE IF EXISTS users;
+
 
 -- 👤 사용자 테이블
 CREATE TABLE users (
@@ -15,12 +18,12 @@ CREATE TABLE users (
 CREATE TABLE devices (
     device_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(user_id),
-    type TEXT NOT NULL,     -- 예: DHT11, LIGHT, SOIL, CO2, PH 등
+    type TEXT NOT NULL,
     name TEXT NOT NULL,
     location TEXT
 );
 
--- 📈 실시간 센서 데이터 테이블 (센서별 칼럼 분리)
+-- 📈 실시간 센서 데이터 테이블
 CREATE TABLE sensor_data (
     time TIMESTAMPTZ NOT NULL,
     device_id INTEGER REFERENCES devices(device_id),
@@ -31,30 +34,74 @@ CREATE TABLE sensor_data (
     co2 DOUBLE PRECISION
 );
 
--- ⏱ Timescale 하이퍼테이블로 전환
+-- ⏱ 하이퍼테이블로 변환
 SELECT create_hypertable('sensor_data', 'time', if_not_exists => TRUE);
 
--- 📊 일별 평균 센서값 저장 테이블
-CREATE TABLE daily_sensor_avg (
-    date DATE NOT NULL,
-    device_id INTEGER REFERENCES devices(device_id),
-    avg_temperature DOUBLE PRECISION,
-    avg_humidity DOUBLE PRECISION,
-    avg_light DOUBLE PRECISION,
-    avg_soil DOUBLE PRECISION,
-    avg_co2 DOUBLE PRECISION,
-    PRIMARY KEY (date, device_id)
+-- 📊 일별 평균 (Continuous Aggregate 뷰)
+CREATE MATERIALIZED VIEW daily_sensor_avg
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket('1 day', time) AS date,
+  device_id,
+  AVG(temperature) AS avg_temperature,
+  AVG(humidity) AS avg_humidity,
+  AVG(light) AS avg_light,
+  AVG(soil) AS avg_soil,
+  AVG(co2) AS avg_co2
+FROM sensor_data
+GROUP BY time_bucket('1 day', time), device_id
+WITH NO DATA;
+
+-- ✅ 월별 평균 테이블
+CREATE TABLE monthly_sensor_avg (
+  month DATE NOT NULL,
+  device_id INTEGER REFERENCES devices(device_id),
+  avg_temperature DOUBLE PRECISION,
+  avg_humidity DOUBLE PRECISION,
+  avg_light DOUBLE PRECISION,
+  avg_soil DOUBLE PRECISION,
+  avg_co2 DOUBLE PRECISION,
+  PRIMARY KEY (month, device_id)
 );
 
--- 테스트 코드
+-- ✅ STEP 2: 월말 요약 프로시저
+DROP PROCEDURE IF EXISTS archive_last_month_avg;
 
-INSERT INTO users (username, password)
-VALUES ('hanjae', '1234'); 
+CREATE PROCEDURE archive_last_month_avg()
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  target_month DATE := date_trunc('month', now()) - INTERVAL '1 month';
+  next_month DATE := date_trunc('month', now());
+BEGIN
+  -- 1. 지난 달 평균 계산해서 저장
+  INSERT INTO monthly_sensor_avg (month, device_id, avg_temperature, avg_humidity, avg_light, avg_soil, avg_co2)
+  SELECT
+    target_month,
+    device_id,
+    ROUND(AVG(avg_temperature), 2),
+    ROUND(AVG(avg_humidity), 2),
+    ROUND(AVG(avg_light), 2),
+    ROUND(AVG(avg_soil), 2),
+    ROUND(AVG(avg_co2), 2)
+  FROM daily_sensor_avg
+  WHERE date >= target_month AND date < next_month
+  GROUP BY device_id
+  ON CONFLICT (month, device_id) DO NOTHING;
 
-INSERT INTO devices (user_id, type, name, location)
-VALUES 
+  -- 2. 지난 달 일별 평균 삭제
+  DELETE FROM daily_sensor_avg
+  WHERE date >= target_month AND date < next_month;
+END $$;
+
+-- ✅ 테스트 데이터 삽입
+INSERT INTO users (username, password) VALUES ('hanjae', '1234');
+
+INSERT INTO devices (user_id, type, name, location) VALUES
 (1, 'DHT11', '온습도센서', '비닐하우스 A-1'),
 (1, 'LIGHT', '조도센서', '비닐하우스 A-2'),
 (1, 'SOIL', '토양센서', '비닐하우스 A-3'),
 (1, 'CO2', '이산화탄소센서', '비닐하우스 A-4');
 
+-- ✅ 일 평균 초기화
+-- CALL refresh_continuous_aggregate('daily_sensor_avg', NULL, NULL);
