@@ -1,6 +1,6 @@
 const client = require('./db');
 
-// ✅ 센서 데이터 삽입 함수
+// ✅ 센서 데이터 삽입 함수 (sensor_logs 기준으로 수정됨)
 const insertSensorData = async (device_id, {
   temperature = null,
   humidity = null,
@@ -9,14 +9,14 @@ const insertSensorData = async (device_id, {
   co2 = null
 }) => {
   const query = `
-    INSERT INTO sensor_data (time, device_id, temperature, humidity, light, soil, co2)
+    INSERT INTO sensor_logs (time, device_id, temperature, humidity, soil_moisture, gas, light)
     VALUES (NOW(), $1, $2, $3, $4, $5, $6)
   `;
-  const values = [device_id, temperature, humidity, light, soil, co2];
+  const values = [device_id, temperature, humidity, soil, co2, light];
 
   try {
     await client.query(query, values);
-    console.log(`✅ 저장: device_id=${device_id} | T=${temperature}°C H=${humidity}% L=${light} S=${soil} CO2=${co2}`);
+    console.log(`✅ 저장: device_id=${device_id} | T=${temperature}°C H=${humidity}% L=${light} S=${soil} G=${co2}`);
   } catch (err) {
     console.error('❌ 데이터 저장 실패', err);
   }
