@@ -1,32 +1,35 @@
+-- 먼저 확장 모듈 설치 (TimescaleDB를 사용하기 위함)
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
 -- 📌 STEP 1: 기존 객체 전체 제거
 DROP MATERIALIZED VIEW IF EXISTS daily_sensor_avg;
-DROP TABLE IF EXISTS board_comments;
-DROP TABLE IF EXISTS board_posts;
-DROP TABLE IF EXISTS sensor_logs;
-DROP TABLE IF EXISTS device_controls;
-DROP TABLE IF EXISTS device_status;
-DROP TABLE IF EXISTS environment_settings;
-DROP TABLE IF EXISTS user_plants;
-DROP TABLE IF EXISTS devices;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS board_comments; -- 게시글 댓글
+DROP TABLE IF EXISTS board_posts; -- 게시판 글
+DROP TABLE IF EXISTS sensor_logs; -- 센서 측정 로그
+DROP TABLE IF EXISTS device_controls; -- 장치 제어 기록
+DROP TABLE IF EXISTS device_status; -- 장치 실시간 상태
+DROP TABLE IF EXISTS environment_settings; -- 환경 기준치 설정
+DROP TABLE IF EXISTS user_plants; -- 유저별 식물 정보
+DROP TABLE IF EXISTS devices; -- 장치 정보
+DROP TABLE IF EXISTS users; -- 사용자 정보
 
 -- 👤 사용자 테이블
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY, -- id
-    email TEXT UNIQUE NOT NULL,  -- 이메일
+    user_id SERIAL PRIMARY KEY, -- 사용자 ID (고유 식별자)
+    email TEXT UNIQUE NOT NULL,  -- 이메일 주소
     password TEXT NOT NULL, -- 비밀번호
-    user_name TEXT NOT NULL, -- 사용자 이름
-    nickname TEXT UNIQUE NOT NULL, -- 닉네임
+    user_name TEXT NOT NULL, -- 사용자 이름 (실명)
+    nickname TEXT UNIQUE NOT NULL, -- 닉네임 (표시용 이름)
     farm_location TEXT, -- 농장 위치
-    role TEXT DEFAULT 'user', -- 권한
-    provider TEXT DEFAULT 'local',  -- 로그인 방식
-    created_at TIMESTAMPTZ DEFAULT now()  -- 생성일
+    role TEXT DEFAULT 'user', -- 권한 (ex: user, admin)
+    provider TEXT DEFAULT 'local',  -- 로그인 방식 (ex: local, google, kakao 등)
+    created_at TIMESTAMPTZ DEFAULT now()  -- 가입 일시
 );
 
--- 🌿 사용자별 식물 테이블
+-- 🌿 사용자별 식물 테이블 (users.user_id를 참조)
 CREATE TABLE user_plants (
-    plant_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id),
+    plant_id SERIAL PRIMARY KEY, -- 식물 ID
+    user_id INTEGER REFERENCES users(user_id), -- 식물 소유 사용자 ID (FK)
     plant_name TEXT NOT NULL, -- 품종 이름 (예: 상추, 청경채)
     planted_at DATE, -- 심은 날짜
     notes TEXT, -- 메모 또는 설명
@@ -35,88 +38,89 @@ CREATE TABLE user_plants (
     soil_moisture_optimal DOUBLE PRECISION -- 최적 토양 수분
 );
 
--- 🛠 장치 테이블
+-- 🛠 장치 테이블 (users.user_id를 참조)
 CREATE TABLE devices (
-    device_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id),
-    type TEXT NOT NULL CHECK (type IN ('DHT-11', 'MQ2', 'CDS', '조명', '환기팬', '급수')),
-    name TEXT NOT NULL,
-    location TEXT
+    device_id SERIAL PRIMARY KEY, -- 장치 ID
+    user_id INTEGER REFERENCES users(user_id), -- 장치 소유 사용자 ID (FK)
+    type TEXT NOT NULL CHECK (type IN ('DHT-11', 'MQ2', 'CDS', '조명', '환기팬', '급수')), -- 장치 유형
+    name TEXT NOT NULL, -- 장치 이름 또는 고유 명칭 (ex: 조명 A1, A2, B1 등)
+    location TEXT -- 설치 위치 (ex: 하우스 A-1)
 );
 
--- 🌱 환경 기준치 설정 테이블
+-- 🌱 환경 기준치 설정 테이블 (users.user_id를 참조)
 CREATE TABLE environment_settings (
-    setting_id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(user_id),
-    temperature_threshold DOUBLE PRECISION,
-    humidity_threshold DOUBLE PRECISION,
-    soil_moisture_threshold DOUBLE PRECISION
+    setting_id SERIAL PRIMARY KEY, -- 설정 ID
+    user_id INTEGER REFERENCES users(user_id), -- 사용자 ID (FK)
+    temperature_threshold DOUBLE PRECISION, -- 기준 온도
+    humidity_threshold DOUBLE PRECISION, -- 기준 습도
+    soil_moisture_threshold DOUBLE PRECISION -- 기준 토양 수분
 );
 
--- 📟 장치 상태 테이블 (실시간 상태)
+-- 📟 장치 상태 테이블 (devices.device_id를 참조)
 CREATE TABLE device_status (
-    status_id SERIAL PRIMARY KEY,
-    device_id INTEGER REFERENCES devices(device_id),
-    watering BOOLEAN,
-    lighting BOOLEAN,
-    fan BOOLEAN,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    status_id SERIAL PRIMARY KEY, -- 상태 ID
+    device_id INTEGER REFERENCES devices(device_id), -- 장치 ID (FK)
+    watering BOOLEAN, -- 급수 상태 (ON/OFF)
+    lighting BOOLEAN, -- 조명 상태 (ON/OFF)
+    fan BOOLEAN, -- 환기팬 상태 (ON/OFF)
+    updated_at TIMESTAMPTZ DEFAULT NOW() -- 상태 갱신 시각
 );
 
--- 🎛 제어 기록 테이블 
+-- 🎛 제어 기록 테이블 (devices.device_id를 참조)
 CREATE TABLE device_controls (
-    control_id SERIAL PRIMARY KEY,
-    device_id INTEGER REFERENCES devices(device_id),
-    control_type TEXT CHECK (control_type IN ('lighting', 'watering', 'fan')),
-    status BOOLEAN,
-    controlled_at TIMESTAMPTZ DEFAULT NOW()
+    control_id SERIAL PRIMARY KEY, -- 제어 기록 ID
+    device_id INTEGER REFERENCES devices(device_id), -- 제어한 장치 ID (FK)
+    category TEXT NOT NULL CHECK (category IN ('센서', '제어기')), -- 장치 대분류
+    control_type TEXT CHECK (control_type IN ('lighting', 'watering', 'fan')), -- 제어 유형
+    status BOOLEAN, -- 제어 결과 상태 (ON/OFF)
+    controlled_at TIMESTAMPTZ DEFAULT NOW() -- 제어 실행 시각
 );
 
--- 📈 센서 로그 테이블
+-- 📈 센서 로그 테이블 (devices.device_id를 참조)
 CREATE TABLE sensor_logs (
-    time TIMESTAMPTZ NOT NULL,
-    device_id INTEGER REFERENCES devices(device_id),
-    temperature DOUBLE PRECISION,
-    humidity DOUBLE PRECISION,
-    soil_moisture DOUBLE PRECISION,
-    gas DOUBLE PRECISION,
-    light DOUBLE PRECISION,
-    PRIMARY KEY (time, device_id)
+    time TIMESTAMPTZ NOT NULL, -- 측정 시간
+    device_id INTEGER REFERENCES devices(device_id), -- 데이터 수집 장치 ID (FK)
+    temperature DOUBLE PRECISION, -- 온도 값
+    humidity DOUBLE PRECISION, -- 습도 값
+    soil_moisture DOUBLE PRECISION, -- 토양 수분 값
+    gas DOUBLE PRECISION, -- 가스 농도
+    light DOUBLE PRECISION, -- 조도 값
+    PRIMARY KEY (time, device_id) -- 복합키: 시각 + 장치 기준 유일
 );
 
 -- TimescaleDB 하이퍼테이블 등록
 SELECT create_hypertable('sensor_logs', 'time', if_not_exists => TRUE);
 
--- 📊 일별 평균 
+-- 📊 일별 평균 (sensor_logs.device_id를 참조)
 CREATE MATERIALIZED VIEW daily_sensor_avg
 WITH (timescaledb.continuous) AS
 SELECT
-  time_bucket('1 day', time) AS date,
-  device_id,
-  AVG(temperature) AS avg_temperature,
-  AVG(humidity) AS avg_humidity,
-  AVG(soil_moisture) AS avg_soil_moisture,
-  AVG(gas) AS avg_gas,
-  AVG(light) AS avg_light
+  time_bucket('1 day', time) AS date, -- 날짜 단위 그룹핑
+  device_id, -- 장치 ID 기준 그룹핑
+  AVG(temperature) AS avg_temperature, -- 일 평균 온도
+  AVG(humidity) AS avg_humidity, -- 일 평균 습도
+  AVG(soil_moisture) AS avg_soil_moisture, -- 일 평균 토양 수분
+  AVG(gas) AS avg_gas, -- 일 평균 가스 농도
+  AVG(light) AS avg_light -- 일 평균 조도
 FROM sensor_logs
 GROUP BY time_bucket('1 day', time), device_id
-WITH NO DATA;
+WITH NO DATA; -- 최초 생성 시 데이터 없음
 
--- 📝 게시글 테이블
+-- 📝 게시글 테이블 (users.user_id를 참조)
 CREATE TABLE board_posts (
-    post_id SERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    author TEXT NOT NULL,
-    plant_type TEXT,
-    content TEXT,
-    created_at DATE DEFAULT CURRENT_DATE
+    post_id SERIAL PRIMARY KEY, -- 게시글 ID
+    user_id INTEGER REFERENCES users(user_id), -- 작성자 ID (FK)
+    title TEXT NOT NULL, -- 제목
+    plant_type TEXT, -- 작물 종류 (ex: 상추)
+    content TEXT, -- 게시글 내용
+    created_at DATE DEFAULT CURRENT_DATE -- 작성일
 );
 
--- 💬 게시글 댓글 테이블 
+-- 💬 게시글 댓글 테이블 (board_posts.post_id, users.user_id 참조)
 CREATE TABLE board_comments (
-    comment_id SERIAL PRIMARY KEY,
-    post_id INTEGER REFERENCES board_posts(post_id),
-    commenter TEXT,
-    comment TEXT,
-    commented_at TIMESTAMPTZ DEFAULT NOW()
+    comment_id SERIAL PRIMARY KEY, -- 댓글 ID
+    post_id INTEGER REFERENCES board_posts(post_id), -- 연결된 게시글 ID (FK)
+    user_id INTEGER REFERENCES users(user_id), -- 댓글 작성자 ID (FK)
+    comment TEXT, -- 댓글 내용
+    commented_at TIMESTAMPTZ DEFAULT NOW() -- 댓글 작성 시각
 );
