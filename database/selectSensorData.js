@@ -1,9 +1,11 @@
 const client = require('./db');
 
 const selectSensorData = async () => {
-  // ✅ 최신 10개 데이터
+  // ✅ 최신 10개 센서 데이터 (장치 이름까지 JOIN)
   const latestQuery = `
-    SELECT * FROM sensor_logs
+    SELECT s.*, d.name AS device_name
+    FROM sensor_logs s
+    JOIN devices d ON s.device_id = d.device_id
     WHERE temperature IS NOT NULL OR humidity IS NOT NULL OR light IS NOT NULL OR soil_moisture IS NOT NULL OR gas IS NOT NULL
     ORDER BY time DESC
     LIMIT 10
@@ -23,8 +25,9 @@ const selectSensorData = async () => {
   try {
     const latest = await client.query(latestQuery);
     console.log('✅ 최근 센서 데이터 (최신순):\n');
+
     latest.rows.forEach(row => {
-      console.log(`[${row.time}] 디바이스 ${row.device_id}`);
+      console.log(`[${row.time}] ${row.device_name} (${row.device_id})`);
       if (row.temperature !== null)     console.log(`🌡️ 온도: ${row.temperature}°C`);
       if (row.humidity !== null)        console.log(`💧 습도: ${row.humidity}%`);
       if (row.light !== null)           console.log(`🔆 조도: ${row.light} lux`);
