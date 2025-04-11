@@ -1,9 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const aedes = require('aedes')();  // Aedes MQTT 브로커
 const mqtt = require('mqtt');
-const net = require('net');
 
 const app = express();
 const port = process.env.PORT || 15023;
@@ -11,19 +9,26 @@ const port = process.env.PORT || 15023;
 app.use(cors());
 app.use(express.json());
 
-// Aedes MQTT 브로커 설정
-const mqttPort = 1883; // MQTT 포트 설정
-const server = net.createServer(aedes.handle);  // Aedes 브로커 서버
-server.listen(mqttPort, function () {
-  console.log(`✅ Aedes MQTT 브로커가 ${mqttPort} 포트에서 실행 중입니다.`);
-});
+// MQTT 브로커 주소 (Mosquitto가 localhost에서 실행 중)
+const mqttBrokerUrl = 'mqtt://localhost:1883';
 
-// CloudServer의 MQTT 클라이언트 설정 (Aedes 브로커에 연결)
-const controlTopic = 'esp32/control';
-const mqttClient = mqtt.connect(`mqtt://localhost:${mqttPort}`);  // Aedes 브로커에 연결
+// MQTT 토픽
+const controlTopic = 'esp32/control';               // 서버 → RPi 제어
+const sensorDataTopic = 'actuator/led/status';      // RPi → 서버 센서 데이터
+
+// MQTT 클라이언트 연결
+const mqttClient = mqtt.connect(mqttBrokerUrl);
 
 mqttClient.on('connect', () => {
-  console.log('✅ CloudServer MQTT 클라이언트가 Aedes 브로커에 연결됨');
+  console.log('✅ CloudServer MQTT 클라이언트가 Mosquitto에 연결됨');
+
+  mqttClient.subscribe(sensorDataTopic, (err) => {
+    if (!err) {
+      console.log(`📡 센서 데이터 토픽 구독 중: ${sensorDataTopic}`);
+    } else {
+      console.error('❌ 센서 데이터 토픽 구독 실패:', err.message);
+    }
+  });
 });
 
 mqttClient.on('error', (err) => {
@@ -32,6 +37,7 @@ mqttClient.on('error', (err) => {
 
 // 전구 상태 변수
 let isLightOn = false;
+let latestSensorData = null;  // 센서 데이터 저장 변수
 
 // 로그인 처리
 app.post('/login', (req, res) => {
@@ -47,7 +53,7 @@ app.post('/login', (req, res) => {
 });
 
 /**
- * 📩 Raspberry Pi → CloudServer: 센서 데이터 수신
+ * 📩 Raspberry Pi → CloudServer: 센서 데이터 수신 (HTTP 방식)
  */
 app.post('/data', (req, res) => {
   const { sensorData } = req.body;
@@ -84,23 +90,9 @@ app.post('/light/toggle', (req, res) => {
   });
 });
 
-
-// ⬇️ 가장 마지막에 추가
-
-let latestSensorData = null;  // 센서 데이터 저장 변수
-
-// ✅ MQTT 구독: RPi → CloudServer
-const sensorDataTopic = 'actuator/led/status';
-
-mqttClient.subscribe(sensorDataTopic, (err) => {
-  if (!err) {
-    console.log(`📡 센서 데이터 토픽 구독 중: ${sensorDataTopic}`);
-  } else {
-    console.error('❌ 센서 데이터 토픽 구독 실패:', err.message);
-  }
-});
-
-// ✅ 센서 데이터 수신 시 저장
+/**
+ * ✅ MQTT로 수신된 센서 데이터 저장
+ */
 mqttClient.on('message', (topic, message) => {
   if (topic === sensorDataTopic) {
     latestSensorData = message.toString();
@@ -108,12 +100,16 @@ mqttClient.on('message', (topic, message) => {
   }
 });
 
-// ✅ 사용자 요청 시 최신 센서 데이터 제공
+/**
+ * ✅ 사용자 요청 시 최신 센서 데이터 제공
+ */
 app.get('/actuator/led/status', (req, res) => {
+  console.log("📡 Client requested latest sensor data");  // 로그 확인용
+
   if (latestSensorData) {
     res.json({ sensorData: latestSensorData });
   } else {
-    res.status(404).json({ error: '아직 수신된 센서 데이터가 없습니다.' });
+    res.status(404).json({ error: 'No sensor data available yet.' });
   }
 });
 
