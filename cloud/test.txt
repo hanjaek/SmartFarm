@@ -1,1 +1,0 @@
-서버용 폴더 api, db ,logic
