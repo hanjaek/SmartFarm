@@ -104,14 +104,17 @@ mqttClient.on('message', (topic, message) => {
  * ✅ 사용자 요청 시 최신 센서 데이터 제공
  */
 app.get('/actuator/led/status', (req, res) => {
-  console.log("📡 Client requested latest sensor data");  // 로그 확인용
+  //console.log("📡 Client requested latest sensor data");
 
   if (latestSensorData) {
     res.json({ sensorData: latestSensorData });
+    //console.log("📤 Sent sensor data to client:", latestSensorData);
   } else {
+    console.warn("⚠️ No sensor data available to send");
     res.status(404).json({ error: 'No sensor data available yet.' });
   }
 });
+
 
 
 // ✅ 서버 실행
