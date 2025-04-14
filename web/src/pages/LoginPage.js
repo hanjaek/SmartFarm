@@ -1,4 +1,3 @@
-// LoginPage.js
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, Form, Button, Alert, Card } from "react-bootstrap";
@@ -6,17 +5,29 @@ import { Container, Form, Button, Alert, Card } from "react-bootstrap";
 const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function LoginPage({ setUserRole }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedRole = sessionStorage.getItem("userRole");
-    if (storedRole) {
-      setUserRole(storedRole);
-      navigate(storedRole === "admin" ? "/admin" : "/user");
-    }
+    // 로그인 여부 확인
+    const checkLogin = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/me`, {
+          method: "GET",
+          credentials: "include", // 쿠키 포함
+        });
+        const data = await res.json();
+        if (data.success) {
+          setUserRole(data.role);
+          navigate(data.role === "admin" ? "/admin" : "/user");
+        }
+      } catch (err) {
+        console.log("자동 로그인 실패");
+      }
+    };
+    checkLogin();
   }, [navigate, setUserRole]);
 
   const handleLogin = async (e) => {
@@ -26,15 +37,14 @@ function LoginPage({ setUserRole }) {
       const response = await fetch(`${BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        credentials: "include", // 쿠키 포함
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        sessionStorage.setItem("userRole", data.role);
         setUserRole(data.role);
-
         navigate(data.role === "admin" ? "/admin" : "/user");
       } else {
         setErrorMsg(data.message || "로그인 실패");
@@ -53,13 +63,13 @@ function LoginPage({ setUserRole }) {
 
         <Form onSubmit={handleLogin}>
           <Form.Group className="mb-3">
-            <Form.Label>아이디</Form.Label>
+            <Form.Label>이메일</Form.Label>
             <Form.Control
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="아이디를 입력하세요"
+              placeholder="이메일을 입력하세요"
             />
           </Form.Group>
 

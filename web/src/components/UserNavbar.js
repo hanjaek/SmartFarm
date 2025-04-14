@@ -6,7 +6,7 @@ import NavDropdown from "react-bootstrap/NavDropdown";
 import { Link, useNavigate } from "react-router-dom";
 import { usePopup } from "../context/PopupContext";
 
-function SmartFarmNavbar({ setUserRole }) {
+function UserNavbar({ setUserRole }) {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
@@ -16,7 +16,7 @@ function SmartFarmNavbar({ setUserRole }) {
     navigate(path);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setExpanded(false);
     showPopup({
       title: "로그아웃",
@@ -25,19 +25,35 @@ function SmartFarmNavbar({ setUserRole }) {
       cancelButtonText: "취소",
       confirmVariant: "success",
       cancelVariant: "danger",
-      onConfirm: () => {
-        sessionStorage.removeItem("userRole");
-        showPopup({
-          title: "로그아웃 완료",
-          message: "정상적으로 로그아웃되었습니다.",
-          buttonText: "확인",
-          confirmVariant: "primary",
-          onConfirm: () => {
-            navigate("/login");
-            setTimeout(() => setUserRole(null), 50);
-          },
-        });
-      }
+      onConfirm: async () => {
+        try {
+          await fetch(`${process.env.REACT_APP_API_BASE_URL}/logout`, {
+            method: "POST",
+            credentials: "include", // ✅ 쿠키 포함해서 보내야 함
+          });
+  
+          sessionStorage.removeItem("userRole"); // 필요하면 유지 or 제거
+          setUserRole(null); // 상태 초기화
+  
+          showPopup({
+            title: "로그아웃 완료",
+            message: "정상적으로 로그아웃되었습니다.",
+            buttonText: "확인",
+            confirmVariant: "primary",
+            onConfirm: () => {
+              navigate("/login");
+              setTimeout(() => setUserRole(null), 50);
+            },
+          });
+        } catch (err) {
+          showPopup({
+            title: "에러",
+            message: "서버와 연결되지 않았습니다.",
+            buttonText: "확인",
+            confirmVariant: "danger",
+          });
+        }
+      },
     });
   };
 
@@ -99,4 +115,4 @@ function SmartFarmNavbar({ setUserRole }) {
   );
 }
 
-export default SmartFarmNavbar;
+export default UserNavbar;

@@ -3,3 +3,10 @@ npm install cors
 npm install dotenv
 npm install mqtt
 npm install axios
+npm install pg 
+npm install bcrypt 
+npm install jsonwebtoken 
+npm install cookie-parser 
+npm install dotenv 
+npm install cors
+npm install moment
