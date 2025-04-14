@@ -30,6 +30,36 @@ pm2 log server
 pm2 stop server
 pm2 restart server
 
+---<TimescaleDB설치>---
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl gnupg lsb-release
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | \
+  sudo tee /etc/apt/sources.list.d/pgdg.list
+
+sudo apt update
+sudo apt install -y postgresql-17
+
+wget --quiet -O - https://packagecloud.io/timescale/timescaledb/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/timescale.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/timescale.gpg] https://packagecloud.io/timescale/timescaledb/ubuntu/ $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/timescaledb.list
+
+sudo apt update
+sudo apt install -y timescaledb-2-postgresql-17
+sudo timescaledb-tune
+sudo systemctl restart postgresql
+# PostgreSQL 접속:
+sudo -u postgres psql
+
+
+*** TimescaleDB 명령어 ***
+\c smartfarm # smartfarm데이터베이스로 이동
+\dt # 현재 데이터베이스의의 테이블 목록 확인
+\l # 데이터베이스 리스트 확인
+
+
+
 
 
 
