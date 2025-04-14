@@ -3,7 +3,7 @@
 static int ledPin;  // 사용할 핀 저장용 (private)
 
 // 핀 세팅
-void pin_set(int pin) {
+void LedPin_set(int pin) {
   ledPin = pin;
   pinMode(ledPin, OUTPUT);
 }
