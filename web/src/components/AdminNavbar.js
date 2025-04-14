@@ -17,21 +17,30 @@ function AdminNavbar({ setUserRole }) {
     setExpanded(false);
     showPopup({
       title: "로그아웃",
-      message: "로그아웃 하시겠습니까?.",
+      message: "로그아웃 하시겠습니까?",
       buttonText: "로그아웃",
       cancelButtonText: "취소",
-      confirmVariant: "success",  // 초록
-      cancelVariant: "danger",    // 빨강
-      onConfirm: () => {
+      confirmVariant: "success",
+      cancelVariant: "danger",
+      onConfirm: async () => {
+        try {
+          // ✅ 서버에 로그아웃 요청 (쿠키 제거)
+          await fetch(`${process.env.REACT_APP_API_BASE_URL}/logout`, {
+            method: "POST",
+            credentials: "include", // 쿠키 포함
+          });
+        } catch (err) {
+          console.error("로그아웃 요청 실패:", err);
+        }
+  
         sessionStorage.removeItem("userRole");
         showPopup({
           title: "로그아웃 완료",
           message: "정상적으로 로그아웃되었습니다.",
           buttonText: "확인",
-          confirmVariant: "primary", // 파랑
+          confirmVariant: "primary",
           onConfirm: () => {
             navigate("/login");
-            // 살짝 늦게 userRole을 초기화해서 UI 깜빡임 방지
             setTimeout(() => setUserRole(null), 50);
           },
         });

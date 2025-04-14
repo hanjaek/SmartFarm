@@ -19,7 +19,10 @@ function UserControlPanel() {
   const [fanErrorMessage, setFanErrorMessage] = useState("");
   const [waterErrorMessage, setWaterErrorMessage] = useState("");
 
+  const [sensorData, setSensorData] = useState(null); // ✅ 센서 데이터 상태
+
   useEffect(() => {
+    // 장치 상태 가져오기
     fetch(`${BASE_URL}/light/status`)
       .then((res) => res.json())
       .then((data) => setLightStatus(data.lightStatus))
@@ -35,6 +38,29 @@ function UserControlPanel() {
       .then((data) => setWaterStatus(data.wateringStatus))
       .catch(() => setWaterErrorMessage("⚠️ 급수 상태 불러오기 실패"));
   }, []);
+
+  useEffect(() => {
+    const fetchSensorData = () => {
+      fetch(`${BASE_URL}/actuator/led/status`)
+        .then((res) => {
+          if (!res.ok) {
+            return;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setSensorData(data.sensorData);
+        })
+        .catch((err) => {
+          setSensorData(null);
+        });
+    };
+  
+    fetchSensorData();
+    const interval = setInterval(fetchSensorData, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  
 
   const toggleLight = () => {
     setLightErrorMessage("");
@@ -104,8 +130,20 @@ function UserControlPanel() {
               >
                 {lightStatus === "ON" ? "전구 끄기" : "전구 켜기"}
               </Button>
+
+              {/* ⚠️ 전구 제어 에러 메시지 */}
               {lightErrorMessage && (
                 <p className="mt-3 text-danger small">{lightErrorMessage}</p>
+              )}
+
+              {/* ✅ 센서 데이터 표시 */}
+              {sensorData ? (
+                <div className="mt-3 small text-muted">
+                  <div>센서값: <strong>{sensorData}</strong></div>
+                  <div>업데이트: {new Date().toLocaleTimeString()}</div> {/* 그냥 클라이언트 시간 */}
+                </div>
+              ) : (
+                <div className="mt-3 small text-muted">📡 센서값을 불러오는 중...</div>
               )}
             </Card.Body>
           </Card>

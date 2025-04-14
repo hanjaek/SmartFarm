@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { PopupProvider } from "./context/PopupContext";
 
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/SignupPage";
 import HomePage from "./pages/HomePage"; // ✅ 홈페이지 추가
 import BoardPage from "./pages/BoardPage";
 import WritePostPage from "./pages/WritePostPage";
 import PostDetailPage from "./pages/PostDetailPage";
 
-
-import SmartFarmNavbar from "./components/UserNavbar";
+import HomeNavbar from "./components/HomeNavbar";
+import UserNavbar from "./components/UserNavbar";
 import AdminNavbar from "./components/AdminNavbar";
 
 // 유저 페이지
@@ -47,20 +48,20 @@ function App() {
   return (
     <Router>
       <PopupProvider>
-      {userRole === "user" && <SmartFarmNavbar setUserRole={setUserRole} />}
+      {userRole === "user" && <UserNavbar setUserRole={setUserRole} />}
       {userRole === "admin" && <AdminNavbar setUserRole={setUserRole} />}
-
+      {!userRole && <HomeNavbar />} {/* 로그인 안 된 상태 */}
 
       <Routes>
         {/* ✅ 홈페이지 - 홍보용 */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomePage setUserRole={setUserRole} />} />
         <Route path="/board" element={<BoardPage />} />
         <Route path="/board/write" element={userRole ? <WritePostPage /> : <Navigate to="/login" />} />
         <Route path="/board/:id" element={userRole ? <PostDetailPage /> : <Navigate to="/login" />} />
 
         {/* ✅ 로그인 */}
         <Route path="/login" element={<LoginPage setUserRole={setUserRole} />} />
+        <Route path="/signup" element={<RegisterPage />} />
 
         {/* ✅ 유저용 페이지 */}
         {userRole === "user" && (
