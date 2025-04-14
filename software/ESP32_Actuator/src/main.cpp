@@ -9,6 +9,8 @@
 // 액추에이터 제어 모듈
 #include "Led_Control.h"
 
+#define LED_PIN 5
+
 // Wi-Fi 설정
 const char* ssid = "최혁진의 iPhone";
 const char* password = "gurwlsdlWkd123";
@@ -42,7 +44,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
 
-  pin_set(5);  // LED 핀 설정 (D5)
+  LedPin_set(LED_PIN);  // LED 핀 설정 (D5)
 
   wifiControl.connect();
   mqttControl.connect("ESP32_Client");
