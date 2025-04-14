@@ -1,0 +1,23 @@
+-- 👤 사용자 등록
+INSERT INTO users (email, password, user_name, nickname, farm_location)
+VALUES ('hanjae@example.com', '1234', '김한재', 'hanjae', '부산광역시 사하구');
+
+-- 🌿 식물 등록
+INSERT INTO user_plants (user_id, plant_name, planted_at, notes, temperature_optimal, humidity_optimal, soil_moisture_optimal)
+VALUES 
+(1, '상추', CURRENT_DATE - INTERVAL '7 days', '일주일 전 심은 상추', 22.5, 60.0, 45.0),
+(1, '청경채', CURRENT_DATE - INTERVAL '5 days', '청경채는 물을 좋아함', 23.0, 65.0, 50.0);
+
+-- 🛠 장치 등록
+INSERT INTO devices (user_id, type, name, location)
+VALUES 
+(1, 'DHT-11', 'dht-11-A1', '비닐하우스 A-1'),
+(1, 'MQ2', 'mq2-A1', '비닐하우스 A-1'),
+(1, 'CDS', 'cds-A1', '비닐하우스 A-1'),
+(1, '조명', 'light-A1', '비닐하우스 A-1'),
+(1, '환기팬', 'fan-A1', '비닐하우스 A-1'),
+(1, '급수', 'water-A1', '비닐하우스 A-1');
+
+-- 🌱 환경 기준치 등록
+INSERT INTO environment_settings (user_id, temperature_threshold, humidity_threshold, soil_moisture_threshold)
+VALUES (1, 24.0, 60.0, 45.0);
