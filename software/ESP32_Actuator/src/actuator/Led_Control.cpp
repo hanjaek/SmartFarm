@@ -1,27 +1,49 @@
 #include "Led_Control.h"
+#include "../MQTT_Control.h"
 
-static int ledPin;  // 사용할 핀 저장용 (private)
+extern MQTT_Control mqttControl;
 
-// 핀 세팅
+static int ledPin;
+static bool manualMode = false;
+static unsigned long lastManualTime = 0;
+static bool lastState = false;
+
 void LedPin_set(int pin) {
   ledPin = pin;
   pinMode(ledPin, OUTPUT);
 }
 
-// 자동 제어: 온도 값에 따라 LED 켜기/끄기
-void LedControl_Auto(float led_time) {
-  if (led_time > 30.0) {  // LED 시간 정해서 키고 끄기
-    digitalWrite(ledPin, HIGH);  // LED 켜기
-  } else {
-    digitalWrite(ledPin, LOW);   // LED 끄기
+void LedControl_Manual(const String& command) {
+  manualMode = true;
+  lastManualTime = millis();
+
+  if (command == "on") {
+    digitalWrite(ledPin, HIGH);
+    if (!lastState) mqttControl.publishStatus("led", true);
+    lastState = true;
+  } else if (command == "off") {
+    digitalWrite(ledPin, LOW);
+    if (lastState) mqttControl.publishStatus("led", false);
+    lastState = false;
   }
 }
 
-// 수동 제어: "on" / "off" 명령 처리
-void LedControl_Manual(const String& command) {
-  if (command == "on") {
+void LedControl_Auto(float lightValue) {
+  if (manualMode) {
+    if (millis() - lastManualTime >= 5 * 60 * 1000) {
+      manualMode = false;
+    } else {
+      return;
+    }
+  }
+
+  if (lightValue < 200.0) {
     digitalWrite(ledPin, HIGH);
-  } else if (command == "off") {
+    if (!lastState) mqttControl.publishStatus("led", true);
+    lastState = true;
+  } else {
     digitalWrite(ledPin, LOW);
+    if (lastState) mqttControl.publishStatus("led", false);
+    lastState = false;
   }
 }
