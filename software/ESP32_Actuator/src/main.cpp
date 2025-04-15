@@ -11,9 +11,9 @@
 #include "actuator/Fan_Control.h"
 //#include "actuator/Water_Control.h"
 
-#define LED_PIN 5
-#define FAN_PIN 18
-//#define WARTER_PIN 19
+#define LED_PIN    5
+#define FAN_PIN    18
+//#define WATER_PIN  19
 
 // Wi-Fi 설정
 const char* ssid = "최혁진의 iPhone";
@@ -41,18 +41,27 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(message);
 
   if (String(topic) == "actuator/led/control") {
-    handleLedControl(message);
+    LedControl_Manual(message);
+  } else if (String(topic) == "actuator/fan/control") {
+    FanControl_Manual(message);
   }
+  // else if (String(topic) == "actuator/water/control") {
+  //   WaterControl_Manual(message);
+  // }
 }
 
 void setup() {
   Serial.begin(115200);
 
-  LedPin_set(LED_PIN);  // LED 핀 설정 (D5)
+  // 핀 초기화
+  LedPin_set(LED_PIN);
+  FanPin_set(FAN_PIN);
+  // WaterPin_set(WATER_PIN);
 
+  // 통신 연결
   wifiControl.connect();
   mqttControl.connect("ESP32_Client");
-  client.setCallback(callback);
+  mqttControl.setCallback(callback);  // mqttControl 안에서 client.setCallback() 호출되게
 }
 
 void loop() {
