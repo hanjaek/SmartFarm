@@ -7,9 +7,13 @@
 #include "Wifi_Control.h"
 
 // 액추에이터 제어 모듈
-#include "Led_Control.h"
+#include "actuator/Led_Control.h"
+#include "actuator/Fan_Control.h"
+//#include "actuator/Water_Control.h"
 
 #define LED_PIN 5
+#define FAN_PIN 18
+//#define WARTER_PIN 19
 
 // Wi-Fi 설정
 const char* ssid = "최혁진의 iPhone";
