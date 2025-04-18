@@ -17,11 +17,11 @@
 #define CDS_PIN 35
 
 // Wi-Fi 설정
-const char* ssid = "최혁진의 iPhone";
-const char* password = "gurwlsdlWkd123";
+const char* ssid = "ㅎㅎ";
+const char* password = "gusdnrla";
 
 // MQTT 설정
-const char* mqtt_server = "172.20.10.2";
+const char* mqtt_server = "3.106.192.39";
 const int mqtt_port = 1883;
 
 // 통신 객체 선언
@@ -55,15 +55,19 @@ void loop() {
   mq2Data.read();
 
   // 테스트용 출력
-  Serial.printf("습도: %.2f %%\t온도: %.2f °C\n", dhtData.getHumValue(), dhtData.getTempValue());
-  Serial.printf("조도: %.2f\n", cdsData.getValue());
-  Serial.printf("가스: %.2f\n", mq2Data.getValue());
+  Serial.printf("습도: %d %%\t온도: %d °C\n", dhtData.getHumValue(), dhtData.getTempValue());
+  Serial.printf("조도: %d\n", cdsData.getValue());
+  Serial.printf("가스: %d\n", mq2Data.getValue());
 
   // MQTT로 전송
-  mqttControl.publish("esp32/humidity", String(dhtData.getHumValue()).c_str());
-  mqttControl.publish("esp32/temperature", String(dhtData.getTempValue()).c_str());
-  mqttControl.publish("esp32/cds", String(cdsData.getValue()).c_str());
-  mqttControl.publish("esp32/gas", String(mq2Data.getValue()).c_str());
+  mqttControl.publish("sensor/humidity/value", String(dhtData.getHumValue()).c_str());
+  delay(2000);
+  mqttControl.publish("sensor/temperature/value", String(dhtData.getTempValue()).c_str());
+  delay(2000);
+  mqttControl.publish("sensor/cds/value", String(cdsData.getValue()).c_str());
+  delay(2000);
+  mqttControl.publish("sensor/gas/value", String(mq2Data.getValue()).c_str());
+  delay(2000);
 
   Serial.println("MQTT 메시지 전송 완료");
 }

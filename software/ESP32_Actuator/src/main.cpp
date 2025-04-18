@@ -42,7 +42,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
 
-  pin_set(5);  // LED 핀 설정 (D5)
+  LedPin_set(5);  // LED 핀 설정 (D5)
 
   wifiControl.connect();
   mqttControl.connect("ESP32_Client");
