@@ -10,7 +10,7 @@ static unsigned long lastManualTime = 0; // 수동 제어 시각 기록 (ms 단�
 static bool lastState = false;          // 마지막 LED 상태 (on/off), 중복 전송 방지용
 
 // -------- 핀 초기화 함수 --------
-// 제어할 LED의 핀 번호를 설정하고 출력으로 설정
+// 제어할 LED의 핀 번호를 설정하고 출력 설정
 void LedPin_set(int pin) {
   ledPin = pin;
   pinMode(ledPin, OUTPUT);

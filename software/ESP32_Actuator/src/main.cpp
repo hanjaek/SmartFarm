@@ -61,7 +61,7 @@ void setup() {
   // 통신 연결
   wifiControl.connect();
   mqttControl.connect("ESP32_Client");
-  mqttControl.setCallback(callback);  // mqttControl 안에서 client.setCallback() 호출되게
+  mqttControl.setCallback(callback);  // mqttControl 안에서 client.setCallback() 호출되게 
 }
 
 void loop() {
