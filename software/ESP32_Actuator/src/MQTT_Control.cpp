@@ -1,6 +1,4 @@
 #include "MQTT_Control.h"
-#include <PubSubClient.h>
-#include <WiFiClient.h>
 
 MQTT_Control::MQTT_Control(WiFiClient& client, const char* server, int port)
     : pubSubClient(client), server(server), port(port) {
@@ -27,4 +25,15 @@ void MQTT_Control::loop() {
 
 void MQTT_Control::publish(const char* topic, const char* payload) {
     pubSubClient.publish(topic, payload);
+}
+
+void MQTT_Control::publishStatus(const char* actuator, bool isOn) {
+    String topic = String("actuator/") + actuator + "/status"; 
+    const char* payload = isOn ? "on" : "off";
+    pubSubClient.publish(topic.c_str(), payload);
+}
+
+
+void MQTT_Control::setCallback(MQTT_CALLBACK_SIGNATURE) {
+    pubSubClient.setCallback(callback);
 }

@@ -111,7 +111,8 @@ CREATE TABLE board_posts (
     title TEXT NOT NULL,
     plant_type TEXT,
     content TEXT,
-    created_at DATE DEFAULT CURRENT_DATE
+    images TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 💬 댓글 테이블
