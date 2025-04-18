@@ -60,10 +60,10 @@ void loop() {
   Serial.printf("가스: %d\n", mq2Data.getValue());
 
   // MQTT로 전송
-  mqttControl.publish("esp32/humidity", String(dhtData.getHumValue()).c_str());
-  mqttControl.publish("esp32/temperature", String(dhtData.getTempValue()).c_str());
-  mqttControl.publish("esp32/cds", String(cdsData.getValue()).c_str());
-  mqttControl.publish("esp32/gas", String(mq2Data.getValue()).c_str());
+  mqttControl.publish("sensor/humidity/value", String(dhtData.getHumValue()).c_str());
+  mqttControl.publish("sensor/temperature/value", String(dhtData.getTempValue()).c_str());
+  mqttControl.publish("sensor/cds/value", String(cdsData.getValue()).c_str());
+  mqttControl.publish("sensor/gas/value", String(mq2Data.getValue()).c_str());
 
   Serial.println("MQTT 메시지 전송 완료");
 }
