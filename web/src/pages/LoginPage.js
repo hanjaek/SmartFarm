@@ -94,6 +94,13 @@ function LoginPage({ setUserRole }) {
             ⬅ 홈으로 돌아가기
           </Button>
         </div>
+
+        <div className="text-center mt-2">
+            <span>이메일이 존재하지 않으신가요? </span>
+            <Button variant="link" size="sm" onClick={() => navigate("/signup")}>
+                회원가입
+            </Button>
+        </div>
       </Card>
     </Container>
   );
