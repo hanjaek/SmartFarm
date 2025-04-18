@@ -11,9 +11,9 @@
 #include "actuator/Fan_Control.h"
 //#include "actuator/Water_Control.h"
 
-#define LED_PIN    5
-#define FAN_PIN    18
-//#define WATER_PIN  19
+#define LED_PIN 5
+#define FAN_PIN 18
+//#define WATER_PIN 19
 
 // Wi-Fi 설정
 const char* ssid = "최혁진의 iPhone";
