@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Card } from "react-bootstrap";
+import { Container, Row, Col, Card, Spinner } from "react-bootstrap";
 import { Line } from "react-chartjs-2";
 
 import {
@@ -18,6 +18,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 function UserDashboard() {
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true); // 추가된 로딩 상태
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,34 +37,57 @@ function UserDashboard() {
         setData(result);
       } catch (err) {
         console.error("대시보드 데이터 가져오기 실패:", err);
+      } finally {
+        setLoading(false); // 데이터 로딩 완료
       }
     };
 
     fetchData();
   }, []);
 
-  if (!data) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <Container className="py-5 text-center">
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Spinner
+            animation="border"
+            variant="success"
+            style={{ width: "3rem", height: "3rem", borderWidth: "0.25rem" }}
+          />
+          <p style={{ marginLeft: "1rem", fontSize: "1.5rem", color: "#5a9a5a" }}>
+            🌱 로딩 중... 기다려주세요 🌱
+          </p>
+        </div>
+      </Container>
+    );
+  }
+
+  if (!data || (!data.crop && !data.plantedAt)) {
+    return (
+      <Container className="py-5 text-center">
+        <h3 style={{ color: "#5a9a5a" }}>아직 키우는 식물이 없습니다 🌱</h3>
+      </Container>
+    );
+  }
 
   const sensorLogs = data.sensorLogs || [];
   const dailySensorLogs = data.dailySensorLogs || [];
 
-  // 현재값 (최근 센서 데이터 기준)
   const latest = sensorLogs.at(-1) || {};
   const temperature = latest.temperature;
   const humidity = latest.humidity;
   const moisture = latest.soil_moisture;
 
-  // 1시간 단위 평균값 그래프용 데이터
-  const labels = dailySensorLogs.map(item =>
+  const labels = dailySensorLogs.map((item) =>
     new Date(item.time).toLocaleTimeString("ko-KR", {
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     })
   );
 
-  const temperatureData = dailySensorLogs.map(item => item.temperature);
-  const humidityData = dailySensorLogs.map(item => item.humidity);
-  const moistureData = dailySensorLogs.map(item => item.soil_moisture);
+  const temperatureData = dailySensorLogs.map((item) => item.temperature);
+  const humidityData = dailySensorLogs.map((item) => item.humidity);
+  const moistureData = dailySensorLogs.map((item) => item.soil_moisture);
 
   const chartConfig = (label, data, color) => ({
     labels,
@@ -81,7 +105,7 @@ function UserDashboard() {
 
   return (
     <Container className="py-5">
-      <h2 className="text-center fw-bold text-success mb-4">🌿 사용자 대시보드</h2>
+      <h2 className="text-center fw-bold text-success mb-4">내 스마트팜 상태 보기</h2>
 
       {/* 작물 정보 */}
       {(data.crop || data.plantedAt) && (
@@ -89,7 +113,7 @@ function UserDashboard() {
           <Col>
             <Card className="text-center shadow-sm">
               <Card.Body>
-                <h5 className="fw-bold text-primary">🪴 내 작물 정보</h5>
+                <h5 className="fw-bold text-primary">키우는 작물 정보</h5>
                 {data.crop && <p>품종: <strong>{data.crop}</strong></p>}
                 {data.plantedAt && (
                   <p>
@@ -150,7 +174,7 @@ function UserDashboard() {
           <Col md={4}>
             <Card className="shadow-sm">
               <Card.Body>
-                <h6 className="text-success">📈 온도 변화</h6>
+                <h6 className="text-success">📈 온도 변화 (최근 24시간)</h6>
                 <Line
                   data={chartConfig("온도(°C)", temperatureData, {
                     border: "rgba(255, 99, 132, 0.8)",
@@ -164,7 +188,7 @@ function UserDashboard() {
           <Col md={4}>
             <Card className="shadow-sm">
               <Card.Body>
-                <h6 className="text-warning">💦 습도 변화</h6>
+                <h6 className="text-warning">💦 습도 변화 (최근 24시간)</h6>
                 <Line
                   data={chartConfig("습도(%)", humidityData, {
                     border: "rgba(54, 162, 235, 0.8)",
@@ -178,7 +202,7 @@ function UserDashboard() {
           <Col md={4}>
             <Card className="shadow-sm">
               <Card.Body>
-                <h6 className="text-primary">🌱 토양 수분 변화</h6>
+                <h6 className="text-primary">🌱 토양 수분 변화 (최근 24시간)</h6>
                 <Line
                   data={chartConfig("토양 수분(%)", moistureData, {
                     border: "rgba(75, 192, 192, 0.8)",

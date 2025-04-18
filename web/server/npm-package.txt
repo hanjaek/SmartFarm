@@ -10,3 +10,4 @@ npm install cookie-parser
 npm install dotenv 
 npm install cors
 npm install moment
+npm install multer
