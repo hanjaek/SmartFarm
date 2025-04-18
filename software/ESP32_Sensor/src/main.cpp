@@ -21,7 +21,7 @@ const char* ssid = "ㅎㅎ";
 const char* password = "gusdnrla";
 
 // MQTT 설정
-const char* mqtt_server = "172.20.10.2";
+const char* mqtt_server = "3.106.192.39";
 const int mqtt_port = 1883;
 
 // 통신 객체 선언
