@@ -53,6 +53,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void setup() {
   Serial.begin(115200);
 
+  LedPin_set(5);  // LED 핀 설정 (D5)
   // 핀 초기화
   LedPin_set(LED_PIN);
   FanPin_set(FAN_PIN);
