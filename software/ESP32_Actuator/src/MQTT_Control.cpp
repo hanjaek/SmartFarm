@@ -10,6 +10,10 @@ void MQTT_Control::connect(const char* clientID) {
         Serial.print("MQTT 연결 시도 중...");
         if (pubSubClient.connect(clientID)) {
             Serial.println(" 연결 성공!");
+            // ✅ 구독할 토픽 추가
+            pubSubClient.subscribe("actuator/led/control");
+            pubSubClient.subscribe("actuator/fan/control");
+            pubSubClient.subscribe("actuator/water/control");
         } else {
             Serial.print(" 실패, 재시도 (");
             Serial.print(pubSubClient.state());

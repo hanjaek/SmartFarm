@@ -20,7 +20,7 @@ const char* ssid = "최혁진의 iPhone";
 const char* password = "gurwlsdlWkd123";
 
 // MQTT 설정
-const char* mqtt_server = "172.20.10.2";
+const char* mqtt_server = "3.106.192.39";
 const int mqtt_port = 1883;
 
 // 통신 객체 선언
