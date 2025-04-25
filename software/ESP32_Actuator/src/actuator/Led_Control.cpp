@@ -23,10 +23,12 @@ void LedControl_Manual(const String& command) {
   lastManualTime = millis();       // 수동 제어 시각 저장
 
   if (command == "on") {
+    // Serial.print("\n on 신호를 받았어요!\n");
     digitalWrite(ledPin, HIGH);    // LED 켜기
     if (!lastState) mqttControl.publishStatus("led", true);  // 상태가 바뀌었으면 전송
     lastState = true;
   } else if (command == "off") {
+    // Serial.print("\n off 신호를 받았어요!\n");
     digitalWrite(ledPin, LOW);     // LED 끄기
     if (lastState) mqttControl.publishStatus("led", false);  // 상태가 바뀌었으면 전송
     lastState = false;
