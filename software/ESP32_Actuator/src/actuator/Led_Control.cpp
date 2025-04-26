@@ -14,6 +14,7 @@ static bool lastState = false;          // 마지막 LED 상태 (on/off), 중복
 void LedPin_set(int pin) {
   ledPin = pin;
   pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, HIGH);  // 초기 상태를 (꺼짐)으로 설정
 }
 
 // -------- 수동 제어 함수 --------
@@ -48,11 +49,11 @@ void LedControl_Auto(float lightValue) {
   }
 
   if (lightValue < 200.0) {
-    digitalWrite(ledPin, HIGH);   // 조도가 낮으면 LED 켜기
+    digitalWrite(ledPin, LOW);   // 조도가 낮으면 LED 켜기
     if (!lastState) mqttControl.publishStatus("led", true);
     lastState = true;
   } else {
-    digitalWrite(ledPin, LOW);    // 조도가 충분히 밝으면 LED 끄기
+    digitalWrite(ledPin, HIGH);    // 조도가 충분히 밝으면 LED 끄기
     if (lastState) mqttControl.publishStatus("led", false);
     lastState = false;
   }
