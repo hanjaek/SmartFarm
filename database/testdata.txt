@@ -1,0 +1,193 @@
+-- 👤 사용자 더미 데이터
+INSERT INTO users (email, password, user_name, nickname, farm_location)
+VALUES 
+('alice@example.com', 'hashed_pw1', 'Alice Kim', 'alicefarm', '경기도 안성시'),
+('bob@example.com', 'hashed_pw2', 'Bob Lee', 'bobgreen', '전라북도 익산시');
+
+-- 🌿 사용자별 식물 더미 데이터
+INSERT INTO user_plants (user_id, plant_name, planted_at, notes, temperature_optimal, humidity_optimal, soil_moisture_optimal)
+VALUES 
+(1, '상추', '2025-03-15', '봄 상추 재배 시작', 22.5, 60.0, 45.0),
+(2, '청경채', '2025-03-20', '수경 재배 실험 중', 21.0, 65.0, 50.0);
+
+-- 🛠 장치 더미 데이터 (센서 & 제어기)
+INSERT INTO devices (user_id, category, type, name, location)
+VALUES
+-- 센서 장치 (user 1)
+(1, 'sensor', 'temperature', '온도센서-1', '하우스 A-1'),
+(1, 'sensor', 'humidity', '습도센서-1', '하우스 A-1'),
+(1, 'sensor', 'moisture', '토양센서-1', '하우스 A-1'),
+
+-- 제어기 장치 (user 1)
+(1, 'actuator', 'lighting', '조명장치-1', '하우스 A-1'),
+(1, 'actuator', 'watering', '급수장치-1', '하우스 A-1'),
+(1, 'actuator', 'fan', '환기팬-1', '하우스 A-1'),
+
+-- 센서 & 제어기 장치 (user 2)
+(2, 'sensor', 'temperature', '온도센서-2', '하우스 B-1'),
+(2, 'actuator', 'fan', '환기팬-2', '하우스 B-1');
+
+-- 📟 장치 상태 더미 데이터
+INSERT INTO device_status (device_id, device_status)
+VALUES
+(4, TRUE),  -- 조명 ON
+(5, FALSE), -- 급수 OFF
+(6, TRUE),  -- 환기팬 ON
+(8, FALSE); -- user2 환기팬 OFF
+
+-- 🌱 환경 기준 설정
+INSERT INTO environment_settings (user_id, temperature_threshold, humidity_threshold, soil_moisture_threshold)
+VALUES
+(1, 23.0, 65.0, 50.0),
+(2, 22.0, 60.0, 55.0);
+
+-- 🎛 제어 기록 더미 데이터
+INSERT INTO device_controls (device_id, category, control_type, status, controlled_at)
+VALUES
+(4, '제어기', 'lighting', TRUE, NOW() - INTERVAL '1 hour'),
+(5, '제어기', 'watering', FALSE, NOW() - INTERVAL '30 minutes'),
+(6, '제어기', 'fan', TRUE, NOW() - INTERVAL '15 minutes'),
+(8, '제어기', 'fan', FALSE, NOW() - INTERVAL '1 day');
+
+
+-- 🌡️ 센서 로그 더미 데이터 (5시간 동안 10분 단위)
+-- 온도 센서 데이터
+INSERT INTO sensor_logs (time, device_id, sensor_type, sensor_value) VALUES
+(NOW() - INTERVAL '5 hours', 1, 'temperature', 22.0),
+(NOW() - INTERVAL '4 hours 50 minutes', 1, 'temperature', 22.3),
+(NOW() - INTERVAL '4 hours 40 minutes', 1, 'temperature', 22.5),
+(NOW() - INTERVAL '4 hours 30 minutes', 1, 'temperature', 22.7),
+(NOW() - INTERVAL '4 hours 20 minutes', 1, 'temperature', 22.9),
+(NOW() - INTERVAL '4 hours 10 minutes', 1, 'temperature', 23.1),
+(NOW() - INTERVAL '4 hours', 1, 'temperature', 23.3),
+(NOW() - INTERVAL '3 hours 50 minutes', 1, 'temperature', 23.5),
+(NOW() - INTERVAL '3 hours 40 minutes', 1, 'temperature', 23.6),
+(NOW() - INTERVAL '3 hours 30 minutes', 1, 'temperature', 23.7),
+(NOW() - INTERVAL '3 hours 20 minutes', 1, 'temperature', 23.8),
+(NOW() - INTERVAL '3 hours 10 minutes', 1, 'temperature', 24.0),
+(NOW() - INTERVAL '3 hours', 1, 'temperature', 24.1),
+(NOW() - INTERVAL '2 hours 50 minutes', 1, 'temperature', 24.2),
+(NOW() - INTERVAL '2 hours 40 minutes', 1, 'temperature', 24.3),
+(NOW() - INTERVAL '2 hours 30 minutes', 1, 'temperature', 24.4),
+(NOW() - INTERVAL '2 hours 20 minutes', 1, 'temperature', 24.5),
+(NOW() - INTERVAL '2 hours 10 minutes', 1, 'temperature', 24.6),
+(NOW() - INTERVAL '2 hours', 1, 'temperature', 24.7),
+(NOW() - INTERVAL '1 hour 50 minutes', 1, 'temperature', 24.8),
+(NOW() - INTERVAL '1 hour 40 minutes', 1, 'temperature', 24.9),
+(NOW() - INTERVAL '1 hour 30 minutes', 1, 'temperature', 25.0),
+(NOW() - INTERVAL '1 hour 20 minutes', 1, 'temperature', 25.1),
+(NOW() - INTERVAL '1 hour 10 minutes', 1, 'temperature', 25.2),
+(NOW() - INTERVAL '1 hour', 1, 'temperature', 25.3),
+(NOW() - INTERVAL '50 minutes', 1, 'temperature', 25.4),
+(NOW() - INTERVAL '40 minutes', 1, 'temperature', 25.5),
+(NOW() - INTERVAL '30 minutes', 1, 'temperature', 25.6),
+(NOW() - INTERVAL '20 minutes', 1, 'temperature', 25.7),
+(NOW() - INTERVAL '10 minutes', 1, 'temperature', 25.8);
+
+-- 습도 센서 데이터
+INSERT INTO sensor_logs (time, device_id, sensor_type, sensor_value) VALUES
+(NOW() - INTERVAL '5 hours', 2, 'humidity', 60.5),
+(NOW() - INTERVAL '4 hours 50 minutes', 2, 'humidity', 60.8),
+(NOW() - INTERVAL '4 hours 40 minutes', 2, 'humidity', 61.0),
+(NOW() - INTERVAL '4 hours 30 minutes', 2, 'humidity', 61.5),
+(NOW() - INTERVAL '4 hours 20 minutes', 2, 'humidity', 61.8),
+(NOW() - INTERVAL '4 hours 10 minutes', 2, 'humidity', 62.0),
+(NOW() - INTERVAL '4 hours', 2, 'humidity', 62.3),
+(NOW() - INTERVAL '3 hours 50 minutes', 2, 'humidity', 62.5),
+(NOW() - INTERVAL '3 hours 40 minutes', 2, 'humidity', 62.8),
+(NOW() - INTERVAL '3 hours 30 minutes', 2, 'humidity', 63.0),
+(NOW() - INTERVAL '3 hours 20 minutes', 2, 'humidity', 63.2),
+(NOW() - INTERVAL '3 hours 10 minutes', 2, 'humidity', 63.5),
+(NOW() - INTERVAL '3 hours', 2, 'humidity', 63.8),
+(NOW() - INTERVAL '2 hours 50 minutes', 2, 'humidity', 64.0),
+(NOW() - INTERVAL '2 hours 40 minutes', 2, 'humidity', 64.3),
+(NOW() - INTERVAL '2 hours 30 minutes', 2, 'humidity', 64.5),
+(NOW() - INTERVAL '2 hours 20 minutes', 2, 'humidity', 64.8),
+(NOW() - INTERVAL '2 hours 10 minutes', 2, 'humidity', 65.0),
+(NOW() - INTERVAL '2 hours', 2, 'humidity', 65.3),
+(NOW() - INTERVAL '1 hour 50 minutes', 2, 'humidity', 65.5),
+(NOW() - INTERVAL '1 hour 40 minutes', 2, 'humidity', 65.8),
+(NOW() - INTERVAL '1 hour 30 minutes', 2, 'humidity', 66.0),
+(NOW() - INTERVAL '1 hour 20 minutes', 2, 'humidity', 66.3),
+(NOW() - INTERVAL '1 hour 10 minutes', 2, 'humidity', 66.5),
+(NOW() - INTERVAL '1 hour', 2, 'humidity', 66.8),
+(NOW() - INTERVAL '50 minutes', 2, 'humidity', 67.0),
+(NOW() - INTERVAL '40 minutes', 2, 'humidity', 67.3),
+(NOW() - INTERVAL '30 minutes', 2, 'humidity', 67.5),
+(NOW() - INTERVAL '20 minutes', 2, 'humidity', 67.8),
+(NOW() - INTERVAL '10 minutes', 2, 'humidity', 68.0);
+
+-- 토양 수분 센서 데이터
+INSERT INTO sensor_logs (time, device_id, sensor_type, sensor_value) VALUES
+(NOW() - INTERVAL '5 hours', 3, 'soil_moisture', 45.0),
+(NOW() - INTERVAL '4 hours 50 minutes', 3, 'soil_moisture', 45.3),
+(NOW() - INTERVAL '4 hours 40 minutes', 3, 'soil_moisture', 45.5),
+(NOW() - INTERVAL '4 hours 30 minutes', 3, 'soil_moisture', 45.8),
+(NOW() - INTERVAL '4 hours 20 minutes', 3, 'soil_moisture', 46.0),
+(NOW() - INTERVAL '4 hours 10 minutes', 3, 'soil_moisture', 46.2),
+(NOW() - INTERVAL '4 hours', 3, 'soil_moisture', 46.5),
+(NOW() - INTERVAL '3 hours 50 minutes', 3, 'soil_moisture', 46.8),
+(NOW() - INTERVAL '3 hours 40 minutes', 3, 'soil_moisture', 47.0),
+(NOW() - INTERVAL '3 hours 30 minutes', 3, 'soil_moisture', 47.2),
+(NOW() - INTERVAL '3 hours 20 minutes', 3, 'soil_moisture', 47.5),
+(NOW() - INTERVAL '3 hours 10 minutes', 3, 'soil_moisture', 47.8),
+(NOW() - INTERVAL '3 hours', 3, 'soil_moisture', 48.0),
+(NOW() - INTERVAL '2 hours 50 minutes', 3, 'soil_moisture', 48.3),
+(NOW() - INTERVAL '2 hours 40 minutes', 3, 'soil_moisture', 48.5),
+(NOW() - INTERVAL '2 hours 30 minutes', 3, 'soil_moisture', 48.8),
+(NOW() - INTERVAL '2 hours 20 minutes', 3, 'soil_moisture', 49.0),
+(NOW() - INTERVAL '2 hours 10 minutes', 3, 'soil_moisture', 49.3),
+(NOW() - INTERVAL '2 hours', 3, 'soil_moisture', 49.5),
+(NOW() - INTERVAL '1 hour 50 minutes', 3, 'soil_moisture', 49.8),
+(NOW() - INTERVAL '1 hour 40 minutes', 3, 'soil_moisture', 50.0),
+(NOW() - INTERVAL '1 hour 30 minutes', 3, 'soil_moisture', 50.2),
+(NOW() - INTERVAL '1 hour 20 minutes', 3, 'soil_moisture', 50.5),
+(NOW() - INTERVAL '1 hour 10 minutes', 3, 'soil_moisture', 50.8),
+(NOW() - INTERVAL '1 hour', 3, 'soil_moisture', 51.0),
+(NOW() - INTERVAL '50 minutes', 3, 'soil_moisture', 51.2),
+(NOW() - INTERVAL '40 minutes', 3, 'soil_moisture', 51.5),
+(NOW() - INTERVAL '30 minutes', 3, 'soil_moisture', 51.7),
+(NOW() - INTERVAL '20 minutes', 3, 'soil_moisture', 52.0),
+(NOW() - INTERVAL '10 minutes', 3, 'soil_moisture', 52.2);
+
+-- 30일치 데이터 삽입
+INSERT INTO sensor_logs (time, device_id, sensor_type, sensor_value)
+SELECT
+    NOW() - INTERVAL '29 days' + (INTERVAL '1 day' * series.day) AS time,
+    1,  -- 온도 센서
+    'temperature' AS sensor_type,
+    ROUND((20 + (RANDOM() * 10))::numeric, 2)  -- 20 ~ 30 사이의 랜덤 온도 값
+FROM generate_series(0, 29) AS series(day)
+
+UNION ALL
+
+SELECT
+    NOW() - INTERVAL '29 days' + (INTERVAL '1 day' * series.day) AS time,
+    2,  -- 습도 센서
+    'humidity' AS sensor_type,
+    ROUND((40 + (RANDOM() * 40))::numeric, 2)  -- 40 ~ 80 사이의 랜덤 습도 값
+FROM generate_series(0, 29) AS series(day)
+
+UNION ALL
+
+SELECT
+    NOW() - INTERVAL '29 days' + (INTERVAL '1 day' * series.day) AS time,
+    3,  -- 토양 수분 센서
+    'soil_moisture' AS sensor_type,
+    ROUND((20 + (RANDOM() * 30))::numeric, 2)  -- 20 ~ 50 사이의 랜덤 토양 수분 값
+FROM generate_series(0, 29) AS series(day);
+
+
+
+
+-- 📝 게시글 더미 데이터
+INSERT INTO board_posts (user_id, title, plant_type, content)
+VALUES
+(1, '상추 생장 일지 1주차', '상추', '광량을 늘려봤더니 생장이 좋아졌어요.'),
+(2, '청경채 수경 실험 후기', '청경채', '뿌리 썩음이 조금 있었는데 환기로 해결됨');
+
+-- 💬 댓글 더미 데이터
+INSERT INTO board_comments (post_id, user_id, comment)
+VALUES
+(1, 2, '광량 조절에 대한 팁 감사합니다!'),
+(2, 1, '저도 환기팬 타이머 설정해봤어요. 효과 좋네요!');

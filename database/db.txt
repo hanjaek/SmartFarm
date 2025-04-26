@@ -1,0 +1,125 @@
+-- 먼저 확장 모듈 설치 (TimescaleDB를 사용하기 위함)
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+
+-- 📌 STEP 1: 기존 객체 전체 제거
+DROP MATERIALIZED VIEW IF EXISTS daily_sensor_avg;
+DROP TABLE IF EXISTS board_comments;
+DROP TABLE IF EXISTS board_posts;
+DROP TABLE IF EXISTS sensor_logs;
+DROP TABLE IF EXISTS device_controls;
+DROP TABLE IF EXISTS device_status;
+DROP TABLE IF EXISTS environment_settings;
+DROP TABLE IF EXISTS user_plants;
+DROP TABLE IF EXISTS devices;
+DROP TABLE IF EXISTS users;
+
+-- 👤 사용자 테이블
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    nickname TEXT UNIQUE NOT NULL,
+    farm_location TEXT,
+    role TEXT DEFAULT 'user',
+    provider TEXT DEFAULT 'local',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 🌿 사용자별 식물 테이블
+CREATE TABLE user_plants (
+    plant_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    plant_name TEXT NOT NULL,
+    planted_at DATE,
+    notes TEXT,
+    temperature_optimal DOUBLE PRECISION,
+    humidity_optimal DOUBLE PRECISION,
+    soil_moisture_optimal DOUBLE PRECISION
+);
+
+-- 🛠 장치 테이블 (센서/제어기 구분 추가)
+CREATE TABLE devices (
+    device_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    category TEXT NOT NULL CHECK (category IN ('sensor', 'actuator')), -- 센서 or 제어기
+    type TEXT NOT NULL CHECK (
+        type IN (
+            'temperature', 'humidity', 'moisture',        -- 센서
+            'lighting', 'watering', 'fan'        -- 제어기
+        )
+    ),
+    name TEXT NOT NULL,
+    location TEXT
+);
+
+-- 📟 장치 상태 테이블
+CREATE TABLE device_status (
+    status_id SERIAL PRIMARY KEY,
+    device_id INTEGER REFERENCES devices(device_id),
+    device_status BOOLEAN,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 🌱 환경 기준치 설정 테이블
+CREATE TABLE environment_settings (
+    setting_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    temperature_threshold DOUBLE PRECISION,
+    humidity_threshold DOUBLE PRECISION,
+    soil_moisture_threshold DOUBLE PRECISION
+);
+
+-- 🎛 제어 기록 테이블
+CREATE TABLE device_controls (
+    control_id SERIAL PRIMARY KEY,
+    device_id INTEGER REFERENCES devices(device_id),
+    category TEXT NOT NULL CHECK (category IN ('센서', '제어기')), -- 과거 사용 분류, 유지
+    control_type TEXT CHECK (control_type IN ('lighting', 'watering', 'fan')),
+    status BOOLEAN,
+    controlled_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 🌡️ 센서 로그 테이블 (TimescaleDB 하이퍼테이블)
+CREATE TABLE sensor_logs (
+    time TIMESTAMPTZ NOT NULL,
+    device_id INTEGER NOT NULL REFERENCES devices(device_id),
+    sensor_type TEXT NOT NULL,
+    sensor_value DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (time, device_id, sensor_type)
+);
+
+-- TimescaleDB 하이퍼테이블 등록
+SELECT create_hypertable('sensor_logs', 'time', if_not_exists => TRUE);
+
+-- 📊 일별 센서 평균값 View
+CREATE MATERIALIZED VIEW daily_sensor_avg
+WITH (timescaledb.continuous) AS
+SELECT
+  time_bucket('1 day', time) AS date,
+  device_id,
+  sensor_type,
+  AVG(sensor_value) AS avg_value
+FROM sensor_logs
+GROUP BY time_bucket('1 day', time), device_id, sensor_type
+WITH NO DATA;
+
+-- 📝 게시글 테이블
+CREATE TABLE board_posts (
+    post_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    title TEXT NOT NULL,
+    plant_type TEXT,
+    content TEXT,
+    images TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 💬 댓글 테이블
+CREATE TABLE board_comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id INTEGER REFERENCES board_posts(post_id),
+    user_id INTEGER REFERENCES users(user_id),
+    comment TEXT,
+    commented_at TIMESTAMPTZ DEFAULT NOW()
+);
