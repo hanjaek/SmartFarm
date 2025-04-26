@@ -7,7 +7,7 @@
 #include "Wifi_Control.h"
 
 // 액추에이터 제어 모듈
-#include "actuator/Led_Control.h"
+#include "actuator/Led_Control.h
 #include "actuator/Fan_Control.h"
 //#include "actuator/Water_Control.h"
 
