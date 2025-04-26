@@ -22,14 +22,14 @@ void LedControl_Manual(const String& command) {
   manualMode = true;                // 수동 제어 모드로 전환
   lastManualTime = millis();       // 수동 제어 시각 저장
 
-  if (command == "on") {
+  if (command == "ON") {
     // Serial.print("\n on 신호를 받았어요!\n");
-    digitalWrite(ledPin, HIGH);    // LED 켜기
+    digitalWrite(ledPin, LOW);    // LED 켜기
     if (!lastState) mqttControl.publishStatus("led", true);  // 상태가 바뀌었으면 전송
     lastState = true;
-  } else if (command == "off") {
+  } else if (command == "OFF") {
     // Serial.print("\n off 신호를 받았어요!\n");
-    digitalWrite(ledPin, LOW);     // LED 끄기
+    digitalWrite(ledPin, HIGH);     // LED 끄기
     if (lastState) mqttControl.publishStatus("led", false);  // 상태가 바뀌었으면 전송
     lastState = false;
   }

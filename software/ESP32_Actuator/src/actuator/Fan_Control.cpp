@@ -22,12 +22,12 @@ void FanControl_Manual(const String& command) {
   manualMode = true;                   // 수동 제어 플래그 활성화
   lastManualTime = millis();          // 현재 시간 저장 (자동 제어 재개 타이머)
 
-  if (command == "on") {
-    digitalWrite(fanPin, HIGH);       // 팬 켜기
+  if (command == "ON") {
+    digitalWrite(fanPin, LOW);       // 팬 켜기
     if (!lastState) mqttControl.publishStatus("fan", true);  // 상태 변경 시 MQTT 전송
     lastState = true;
-  } else if (command == "off") {
-    digitalWrite(fanPin, LOW);        // 팬 끄기
+  } else if (command == "OFF") {
+    digitalWrite(fanPin, HIGH);        // 팬 끄기
     if (lastState) mqttControl.publishStatus("fan", false);  // 상태 변경 시 MQTT 전송
     lastState = false;
   }
