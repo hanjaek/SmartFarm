@@ -16,8 +16,8 @@
 //#define WATER_PIN 19
 
 // Wi-Fi 설정
-const char* ssid = "최혁진의 iPhone";
-const char* password = "gurwlsdlWkd123";
+const char* ssid = "김한재의 iPhone";
+const char* password = "25120816";
 
 // MQTT 설정
 const char* mqtt_server = "3.106.192.39";
