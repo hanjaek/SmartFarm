@@ -14,6 +14,7 @@ static bool lastState = false;        // 이전 팬 상태 (ON/OFF) 기억
 void FanPin_set(int pin) {
   fanPin = pin;
   pinMode(fanPin, OUTPUT); // 해당 핀을 출력으로 설정
+  digitalWrite(fanPin, HIGH);  // 초기 상태를 (꺼짐)으로 설정
 }
 
 // -------- 수동 제어 함수 --------
