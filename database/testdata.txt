@@ -1,4 +1,4 @@
--- 👤 사용자 더미 데이터
+-- 👤 사용자 더미 데이터임
 INSERT INTO users (email, password, user_name, nickname, farm_location)
 VALUES 
 ('alice@example.com', 'hashed_pw1', 'Alice Kim', 'alicefarm', '경기도 안성시'),
