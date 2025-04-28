@@ -50,7 +50,8 @@ CREATE TABLE devices (
         )
     ),
     name TEXT NOT NULL,
-    location TEXT
+    location TEXT,
+    ip_address TEXT
 );
 
 -- 📟 장치 상태 테이블
