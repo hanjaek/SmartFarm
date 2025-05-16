@@ -1,3 +1,5 @@
+// on: 0x01, off: 0x00, auto: 0xFF
+
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
